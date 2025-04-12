@@ -26,6 +26,12 @@ export default function Home() {
               <ArrowRight className="h-4 w-4" />
             </Link>
           </Button>
+          <Button asChild size="lg" variant="outline">
+            <Link href="/all-recipes" className="flex items-center gap-2">
+              All Recipes
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </Button>
         </div>
       </div>
     </main>

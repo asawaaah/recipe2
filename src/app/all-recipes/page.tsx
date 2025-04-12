@@ -13,6 +13,18 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
+import { RecipeCard } from "@/components/blocks/RecipeCard"
+
+// Placeholder data for development
+const placeholderRecipes = Array.from({ length: 8 }, (_, i) => ({
+  id: `placeholder-${i + 1}`,
+  title: `Chocolate Fondant ${i + 1}`,
+  description:
+    "A decadent chocolate fondant with a perfectly gooey center. This classic French dessert is pure chocolate heaven.",
+  cookingTime: 15,
+  servings: 1,
+  imageUrl: "/images/recipes/chocolate-fondant.jpg",
+}))
 
 export default function Page() {
   return (
@@ -26,26 +38,30 @@ export default function Page() {
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="#">
-                    Building Your Application
-                  </BreadcrumbLink>
+                  <BreadcrumbLink href="/">Home</BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator className="hidden md:block" />
                 <BreadcrumbItem>
-                  <BreadcrumbPage>Data Fetching</BreadcrumbPage>
+                  <BreadcrumbPage>All Recipes</BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
           </div>
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-          <div className="grid auto-rows-min gap-4 md:grid-cols-4">
-            <div className="aspect-video rounded-xl bg-muted/50" />
-            <div className="aspect-video rounded-xl bg-muted/50" />
-            <div className="aspect-video rounded-xl bg-muted/50" />
-            <div className="aspect-video rounded-xl bg-muted/50" />
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+            {placeholderRecipes.map((recipe) => (
+              <RecipeCard
+                key={recipe.id}
+                id={recipe.id}
+                title={recipe.title}
+                description={recipe.description}
+                cookingTime={recipe.cookingTime}
+                servings={recipe.servings}
+                imageUrl={recipe.imageUrl}
+              />
+            ))}
           </div>
-          <div className="min-h-[100vh] flex-1 rounded-xl bg-muted/50 md:min-h-min" />
         </div>
       </SidebarInset>
     </SidebarProvider>
