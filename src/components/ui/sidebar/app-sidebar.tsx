@@ -18,6 +18,7 @@ import { NavMain } from "@/components/ui/sidebar/nav-main"
 import { NavProjects } from "@/components/ui/sidebar/nav-projects"
 import { NavUser } from "@/components/ui/sidebar/nav-user"
 import { SiteHeader } from "@/components/ui/sidebar/site-header"
+import { SearchForm } from "@/components/ui/sidebar/search-form"
 import {
   Sidebar,
   SidebarContent,
@@ -144,6 +145,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
         <SiteHeader />
+        <div className="pt-4 pb-2 px-2">
+          <SearchForm />
+        </div>
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
