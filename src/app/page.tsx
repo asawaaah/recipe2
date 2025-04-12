@@ -13,10 +13,16 @@ export default function Home() {
           Share and discover amazing recipes from around the world
         </p>
         
-        <div className="flex justify-center mt-8">
+        <div className="flex justify-center gap-4 mt-8">
           <Button asChild size="lg">
             <Link href="/example" className="flex items-center gap-2">
               View UI Components
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </Button>
+          <Button asChild size="lg" variant="secondary">
+            <Link href="/my-cookbook" className="flex items-center gap-2">
+              Cook Book with sidebar
               <ArrowRight className="h-4 w-4" />
             </Link>
           </Button>
