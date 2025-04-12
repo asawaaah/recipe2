@@ -1,12 +1,9 @@
-import '@/styles/globals.css'
-import { Inter } from 'next/font/google'
-import { Providers } from './providers'
-
-const inter = Inter({ subsets: ['latin'] })
+import "@/styles/globals.css"
+import { Providers } from "./providers"
 
 export const metadata = {
   title: 'Recipe App',
-  description: 'A modern recipe sharing platform',
+  description: 'Your personal recipe manager',
 }
 
 export default function RootLayout({
@@ -15,8 +12,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
+    <html lang="en" suppressHydrationWarning>
+      <body className="min-h-screen bg-background font-sans antialiased">
         <Providers>{children}</Providers>
       </body>
     </html>

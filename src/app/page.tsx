@@ -1,3 +1,7 @@
+import Link from "next/link"
+import { ArrowRight } from "lucide-react"
+import { Button } from "@/components/ui/button"
+
 export default function Home() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-24">
@@ -8,6 +12,15 @@ export default function Home() {
         <p className="text-center text-lg mb-8">
           Share and discover amazing recipes from around the world
         </p>
+        
+        <div className="flex justify-center mt-8">
+          <Button asChild size="lg">
+            <Link href="/example" className="flex items-center gap-2">
+              View UI Components
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </Button>
+        </div>
       </div>
     </main>
   )
