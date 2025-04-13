@@ -1,70 +1,56 @@
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
-import { notFound } from 'next/navigation'
 import { Metadata } from 'next'
+import { notFound } from 'next/navigation'
+import { fetchRecipe } from '@/services/recipes/recipeFetcher'
 import RecipeDetails from '@/components/blocks/RecipeDetails'
+import { Badge } from '@/components/ui/badge'
+import { Clock, Users } from 'lucide-react'
+import Link from 'next/link'
 
-// This enables dynamic metadata for SEO
-export async function generateMetadata({ params }: { params: { handle: string } }): Promise<Metadata> {
-  const supabase = createServerComponentClient({ cookies })
-  
-  console.log('Attempting to fetch recipe for metadata with handle:', params.handle)
-  const { data: recipe, error: metadataError } = await supabase
-    .from('recipes')
-    .select('title, description')
-    .eq('handle', params.handle)
-    .single()
-
-  if (metadataError) {
-    console.error('Error fetching recipe metadata:', metadataError)
-  }
-
-  console.log('Metadata fetch result:', recipe)
-
-  if (!recipe) {
-    return {
-      title: 'Recipe Not Found',
-      description: 'The requested recipe could not be found.'
-    }
-  }
-
-  return {
-    title: `${recipe.title} - Recipe Details`,
-    description: recipe.description
+interface RecipePageProps {
+  params: {
+    handle: string
   }
 }
 
-export default async function RecipeDetailsPage({ params }: { params: { handle: string } }) {
-  const supabase = createServerComponentClient({ cookies })
+export async function generateMetadata({ params }: RecipePageProps): Promise<Metadata> {
+  const recipe = await fetchRecipe(params.handle)
+  if (!recipe) return {}
 
-  // Simple query to check if the recipe exists
-  const { data: recipe, error } = await supabase
-    .from('recipes')
-    .select('*')
-    .eq('handle', params.handle)
-    .single()
+  const authorName = recipe.user?.username 
+    ? `${recipe.user.username}`
+    : 'Unknown Chef'
 
-  if (error) {
-    console.error('Database error:', error.message)
-    console.error('Error details:', error)
-    return <div>Error loading recipe: {error.message}</div>
+  return {
+    title: `${recipe.title} by ${authorName}`,
+    description: recipe.description,
   }
+}
 
-  if (!recipe) {
-    console.log('No recipe found with handle:', params.handle)
-    return <div>
-      <h1>Debug Info</h1>
-      <pre>
-        Searching for handle: {params.handle}
-        Recipe data: {JSON.stringify(recipe, null, 2)}
-      </pre>
-    </div>
-  }
+export default async function RecipePage({ params }: RecipePageProps) {
+  const recipe = await fetchRecipe(params.handle)
+  if (!recipe) notFound()
+
+  const authorName = recipe.user?.username 
+    ? `${recipe.user.username}`
+    : 'Unknown Chef'
 
   return (
-    <div>
-      <h1>Recipe Found!</h1>
-      <pre>{JSON.stringify(recipe, null, 2)}</pre>
+    <div className="container py-10">
+      <h1 className="text-4xl font-bold mb-6">{recipe.title}</h1>
+      <div className="flex gap-4 mb-6">
+        <Badge variant="secondary" className="flex items-center gap-1">
+          <Clock className="w-4 h-4" />
+          {recipe.cooking_time} minutes
+        </Badge>
+        <Badge variant="secondary" className="flex items-center gap-1">
+          <Users className="w-4 h-4" />
+          {recipe.servings} servings
+        </Badge>
+        <Badge variant="outline">
+          By <Link href={`/chefs/${recipe.user?.username || 'unknown'}`} className="hover:underline ml-1">{authorName}</Link>
+        </Badge>
+      </div>
+      <RecipeDetails recipe={recipe} />
     </div>
   )
 } 
