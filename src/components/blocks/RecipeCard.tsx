@@ -41,11 +41,11 @@ export function RecipeCard({
             />
           </div>
         )}
-        <CardHeader>
+        <CardHeader className="px-2">
           <CardTitle className="line-clamp-2">{title}</CardTitle>
           <CardDescription className="line-clamp-2">{description}</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-2 pb-4 pt-0">
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             {cookingTime && (
               <div className="flex items-center gap-1">

@@ -4,14 +4,14 @@ import * as React from "react"
 import {
   AudioWaveform,
   BookOpen,
-  Bot,
+  Utensils,
   Command,
   Frame,
   ChefHat,
   Map,
   PieChart,
   Settings2,
-  TerminalSquare,
+  CookingPot,
 } from "lucide-react"
 
 import { NavMain } from "@/components/ui/sidebar/nav-main"
@@ -36,40 +36,41 @@ const data = {
   },
   navMain: [
     {
-      title: "Playground",
-      url: "#",
-      icon: TerminalSquare,
+      title: "My recipes",
+      url: "/my-cookbook",
+      icon: CookingPot,
       isActive: true,
       items: [
         {
-          title: "History",
-          url: "#",
+          title: "Starters",
+          url: "/my-cookbook",
         },
         {
-          title: "Starred",
-          url: "#",
+          title: "Main courses",
+          url: "/my-cookbook",
         },
         {
-          title: "Settings",
-          url: "#",
+          title: "Desserts",
+          url: "/my-cookbook",
         },
       ],
     },
     {
-      title: "Models",
-      url: "#",
-      icon: Bot,
+      title: "All recipes",
+      url: "all-recipes",
+      icon: Utensils,
+      isActive: true,
       items: [
         {
-          title: "Genesis",
+          title: "By country",
           url: "#",
         },
         {
-          title: "Explorer",
+          title: "By diet",
           url: "#",
         },
         {
-          title: "Quantum",
+          title: "By type",
           url: "#",
         },
       ],
