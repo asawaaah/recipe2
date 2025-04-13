@@ -42,8 +42,8 @@ const data = {
       isActive: true,
       items: [
         {
-          title: "Starters",
-          url: "/my-cookbook",
+          title: "Pizza dough",
+          url: "/recipes/pizza-dough-by-john-doe",
         },
         {
           title: "Main courses",

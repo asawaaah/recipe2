@@ -12,18 +12,24 @@ export type Database = {
         Row: {
           id: string
           email: string
+          username: string
+          avatar_url?: string
           created_at: string
           updated_at: string
         }
         Insert: {
           id?: string
           email: string
+          username: string
+          avatar_url?: string
           created_at?: string
           updated_at?: string
         }
         Update: {
           id?: string
           email?: string
+          username?: string
+          avatar_url?: string
           created_at?: string
           updated_at?: string
         }
@@ -34,6 +40,7 @@ export type Database = {
           title: string
           description: string
           user_id: string
+          handle: string
           created_at: string
           updated_at: string
           image_url?: string
@@ -45,6 +52,7 @@ export type Database = {
           title: string
           description: string
           user_id: string
+          handle?: string
           created_at?: string
           updated_at?: string
           image_url?: string
@@ -56,6 +64,7 @@ export type Database = {
           title?: string
           description?: string
           user_id?: string
+          handle?: string
           created_at?: string
           updated_at?: string
           image_url?: string
