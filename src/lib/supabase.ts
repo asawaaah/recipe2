@@ -1,9 +1,11 @@
-import { createClient } from '@supabase/supabase-js'
+import { createBrowserClient } from '@supabase/ssr'
 
-const supabaseUrl = 'https://jnuakxuatxrajimebowt.supabase.co'
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpudWFreHVhdHhyYWppbWVib3d0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ0MjQ5NTcsImV4cCI6MjA2MDAwMDk1N30.Px2C_QXGGRMoNSoB4J6D3cz1-BvkIIKtFgYqCqeVLjA'
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export const createClient = () => {
+  return createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+}
 
 export type Database = {
   public: {
