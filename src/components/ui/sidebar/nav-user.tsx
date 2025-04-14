@@ -88,7 +88,10 @@ export function NavUser() {
             className="w-full justify-start" 
             onClick={() => router.push('/login')}
           >
-            <User className="mr-2 h-4 w-4" />
+            <div className="relative">
+              <User className="mr-2 h-4 w-4" />
+              <div className="absolute -bottom-1 right-1 h-2.5 w-2.5 rounded-full bg-orange-500" />
+            </div>
             Sign In
           </Button>
         </SidebarMenuItem>
