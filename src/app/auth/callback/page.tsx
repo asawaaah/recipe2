@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { updateUsername } from '@/lib/auth'
@@ -18,6 +18,7 @@ export default function AuthCallbackPage() {
   const [showUsernameDialog, setShowUsernameDialog] = useState(false)
   const [username, setUsername] = useState('')
   const [error, setError] = useState('')
+  const toastShown = useRef(false)
 
   useEffect(() => {
     const supabase = createClient()
@@ -47,10 +48,14 @@ export default function AuthCallbackPage() {
           .single()
 
         if (!user?.username) {
-          // Show username dialog
+          // Show username dialog for new users
           setShowUsernameDialog(true)
         } else {
-          // Redirect to dashboard
+          // Only show toast if it hasn't been shown yet
+          if (!toastShown.current) {
+            toast.success('You are now logged in using your Google account!')
+            toastShown.current = true
+          }
           router.push('/my-cookbook')
           router.refresh()
         }
@@ -77,13 +82,13 @@ export default function AuthCallbackPage() {
 
       await updateUsername(session.user.id, username)
       
-      // Update user metadata to include display name
       await supabase.auth.updateUser({
         data: {
           display_name: username
         }
       })
       
+      toast.success('Welcome to Recipe2!')
       router.push('/my-cookbook')
       router.refresh()
     } catch (error) {
