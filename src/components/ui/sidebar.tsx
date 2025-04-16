@@ -24,9 +24,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { useSessionStorage } from "@/state/hooks/useSessionStorage"
 
-const SIDEBAR_COOKIE_NAME = "sidebar_state"
-const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
 const SIDEBAR_WIDTH = "16rem"
 const SIDEBAR_WIDTH_MOBILE = "18rem"
 const SIDEBAR_WIDTH_ICON = "3rem"
@@ -77,8 +76,11 @@ const SidebarProvider = React.forwardRef<
     const [openMobile, setOpenMobile] = React.useState(false)
 
     // This is the internal state of the sidebar.
+    // Use sessionStorage for persistence across page loads
+    const [storedOpen, setStoredOpen] = useSessionStorage("sidebar_state", defaultOpen)
+    const [_open, _setOpen] = React.useState(storedOpen)
+    
     // We use openProp and setOpenProp for control from outside the component.
-    const [_open, _setOpen] = React.useState(defaultOpen)
     const open = openProp ?? _open
     const setOpen = React.useCallback(
       (value: boolean | ((value: boolean) => boolean)) => {
@@ -89,10 +91,10 @@ const SidebarProvider = React.forwardRef<
           _setOpen(openState)
         }
 
-        // This sets the cookie to keep the sidebar state.
-        document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
+        // Store state in sessionStorage instead of cookies
+        setStoredOpen(openState)
       },
-      [setOpenProp, open]
+      [setOpenProp, open, setStoredOpen]
     )
 
     // Helper to toggle the sidebar.

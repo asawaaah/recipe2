@@ -10,19 +10,17 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent } from '@/components/ui/card'
-import { signIn } from '@/lib/auth'
 import { SignInInput, signInSchema } from '@/lib/validators/auth'
 import { Icons } from '@/components/ui/icons'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { GoogleLogo } from '@/components/svg/google'
+import { useAuthActions } from '@/state/hooks/useAuthActions'
 
 export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
   const router = useRouter()
-  const [isLoading, setIsLoading] = useState(false)
-  const supabase = createClientComponentClient()
+  const { signIn, signInWithGoogle, isLoading, error } = useAuthActions()
 
   const {
     register,
@@ -34,54 +32,17 @@ export function LoginForm({
 
   const onSubmit = async (data: SignInInput) => {
     try {
-      setIsLoading(true)
       await signIn(data)
-      toast.success('You are now logged in!')
-      router.push('/my-cookbook')
-      router.refresh()
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to sign in')
-    } finally {
-      setIsLoading(false)
+      console.error('Error in form submission:', error)
     }
   }
 
-  // Commenting out GitHub login as it's not needed
-  /* async function handleGithubLogin() {
+  const handleGoogleLogin = async () => {
     try {
-      setIsLoading(true)
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'github',
-        options: {
-          redirectTo: `${location.origin}/auth/callback`,
-        },
-      })
-      if (error) {
-        throw error
-      }
+      await signInWithGoogle()
     } catch (error) {
-      console.error('Error:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  } */
-
-  async function handleGoogleLogin() {
-    try {
-      setIsLoading(true)
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${location.origin}/auth/callback`,
-        },
-      })
-      if (error) {
-        throw error
-      }
-    } catch (error) {
-      console.error('Error:', error)
-    } finally {
-      setIsLoading(false)
+      console.error('Error with Google login:', error)
     }
   }
 
@@ -97,6 +58,9 @@ export function LoginForm({
                   Gain access to your ultimate recipe collection.
                 </p>
               </div>
+              {error && (
+                <div className="text-sm text-red-500 text-center">{error}</div>
+              )}
               <div className="grid gap-2">
                 <Label htmlFor="emailOrUsername">Email or Username</Label>
                 <Input

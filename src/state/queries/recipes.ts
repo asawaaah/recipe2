@@ -1,0 +1,380 @@
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { createClient } from "@/lib/supabase"
+
+// Types
+type CreateRecipeData = {
+  title: string
+  description: string
+  handle: string
+  image_url?: string
+  cooking_time?: number
+  servings?: number
+  ingredients: { name: string; amount: number | string; unit: string }[]
+  instructions: { step_number: number; description: string }[]
+  tags?: string[]
+}
+
+type UpdateRecipeData = Partial<CreateRecipeData> & { id: string }
+
+// Query keys
+export const recipeKeys = {
+  all: ['recipes'] as const,
+  lists: () => [...recipeKeys.all, 'list'] as const,
+  list: (filters: Record<string, any>) => [...recipeKeys.lists(), filters] as const,
+  details: () => [...recipeKeys.all, 'detail'] as const,
+  detail: (id: string) => [...recipeKeys.details(), id] as const,
+  userRecipes: (userId?: string) => [...recipeKeys.lists(), { userId }] as const,
+}
+
+// Query Hooks
+export function useRecipes(filters = {}) {
+  const supabase = createClient()
+
+  return useQuery({
+    queryKey: recipeKeys.list(filters),
+    queryFn: async () => {
+      let query = supabase
+        .from("recipes")
+        .select("*")
+        
+      // Apply filters dynamically
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          // @ts-ignore - dynamic filtering
+          query = query.eq(key, value)
+        }
+      })
+      
+      const { data, error } = await query.order("created_at", { ascending: false })
+      
+      if (error) throw error
+      return data
+    },
+  })
+}
+
+export function useUserRecipes(userId: string | undefined) {
+  const supabase = createClient()
+
+  return useQuery({
+    queryKey: recipeKeys.userRecipes(userId),
+    queryFn: async () => {
+      if (!userId) return []
+      
+      const { data, error } = await supabase
+        .from("recipes")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+      
+      if (error) throw error
+      return data
+    },
+    enabled: !!userId,
+  })
+}
+
+export function useRecipe(recipeId: string | undefined) {
+  const supabase = createClient()
+
+  return useQuery({
+    queryKey: recipeKeys.detail(recipeId || ''),
+    queryFn: async () => {
+      if (!recipeId) return null
+      
+      try {
+        const { data, error } = await supabase
+          .from("recipes")
+          .select(`
+            *,
+            ingredients(*),
+            instructions(*),
+            user:users!recipes_user_id_fkey(
+              id, username
+            )
+          `)
+          .eq("id", recipeId)
+          .single()
+        
+        if (error) {
+          // Check if it's a "no rows returned" error (recipe not found)
+          if (error.code === 'PGRST116' || error.message.includes('no rows')) {
+            return null // Return null for not found instead of throwing
+          }
+          throw error
+        }
+        
+        return data
+      } catch (err) {
+        console.error('Error fetching recipe by ID:', err)
+        throw err
+      }
+    },
+    enabled: !!recipeId,
+  })
+}
+
+export function useRecipeByHandle(handle: string | undefined) {
+  const supabase = createClient()
+  
+  return useQuery({
+    queryKey: recipeKeys.detail(handle || ''),
+    queryFn: async () => {
+      if (!handle) return null
+      
+      try {
+        const { data, error } = await supabase
+          .from("recipes")
+          .select(`
+            *,
+            ingredients(*),
+            instructions(*),
+            user:users!recipes_user_id_fkey(
+              id, username
+            )
+          `)
+          .eq("handle", handle)
+          .single()
+        
+        if (error) {
+          // Check if it's a "no rows returned" error (recipe not found)
+          if (error.code === 'PGRST116' || error.message.includes('no rows')) {
+            throw new Error(`Recipe with handle "${handle}" not found`)
+          }
+          throw error
+        }
+        
+        if (!data) {
+          throw new Error(`Recipe with handle "${handle}" not found`)
+        }
+        
+        return data
+      } catch (err) {
+        console.error('Error fetching recipe by handle:', err)
+        throw err
+      }
+    },
+    enabled: !!handle,
+    retry: 1
+  })
+}
+
+// Mutation Hooks
+export function useCreateRecipe() {
+  const queryClient = useQueryClient()
+  const supabase = createClient()
+
+  return useMutation({
+    mutationFn: async (recipe: CreateRecipeData) => {
+      const user = (await supabase.auth.getUser()).data.user
+      if (!user) throw new Error("You must be logged in to create a recipe")
+
+      // Insert recipe
+      const { data: recipeData, error: recipeError } = await supabase
+        .from("recipes")
+        .insert({
+          title: recipe.title,
+          description: recipe.description,
+          handle: recipe.handle,
+          user_id: user.id,
+          image_url: recipe.image_url,
+          cooking_time: recipe.cooking_time,
+          servings: recipe.servings,
+        })
+        .select()
+        .single()
+
+      if (recipeError) throw recipeError
+      const recipeId = recipeData.id
+
+      // Insert ingredients
+      if (recipe.ingredients.length > 0) {
+        const { error: ingredientsError } = await supabase
+          .from("ingredients")
+          .insert(
+            recipe.ingredients.map(ingredient => ({
+              ...ingredient,
+              recipe_id: recipeId,
+            }))
+          )
+
+        if (ingredientsError) throw ingredientsError
+      }
+
+      // Insert instructions
+      if (recipe.instructions.length > 0) {
+        const { error: instructionsError } = await supabase
+          .from("instructions")
+          .insert(
+            recipe.instructions.map(instruction => ({
+              ...instruction,
+              recipe_id: recipeId,
+            }))
+          )
+
+        if (instructionsError) throw instructionsError
+      }
+
+      // Insert tags if present
+      if (recipe.tags && recipe.tags.length > 0) {
+        // Get or create tags
+        for (const tagName of recipe.tags) {
+          // Check if tag exists
+          const { data: existingTag } = await supabase
+            .from("tags")
+            .select("id")
+            .eq("name", tagName)
+            .single()
+
+          let tagId = existingTag?.id
+
+          // Create tag if it doesn't exist
+          if (!tagId) {
+            const { data: newTag, error: tagError } = await supabase
+              .from("tags")
+              .insert({ name: tagName })
+              .select()
+              .single()
+
+            if (tagError) throw tagError
+            tagId = newTag.id
+          }
+
+          // Create recipe-tag relationship
+          const { error: relationError } = await supabase
+            .from("recipe_tags")
+            .insert({
+              recipe_id: recipeId,
+              tag_id: tagId,
+            })
+
+          if (relationError) throw relationError
+        }
+      }
+
+      return recipeData
+    },
+    onSuccess: (data) => {
+      // Invalidate queries
+      queryClient.invalidateQueries({ queryKey: recipeKeys.lists() })
+      queryClient.invalidateQueries({ 
+        queryKey: recipeKeys.userRecipes(data.user_id)
+      })
+    },
+  })
+}
+
+export function useUpdateRecipe() {
+  const queryClient = useQueryClient()
+  const supabase = createClient()
+
+  return useMutation({
+    mutationFn: async ({ id, ...recipe }: UpdateRecipeData) => {
+      // Update recipe basic info
+      const { data: recipeData, error: recipeError } = await supabase
+        .from("recipes")
+        .update({
+          ...(recipe.title && { title: recipe.title }),
+          ...(recipe.description && { description: recipe.description }),
+          ...(recipe.handle && { handle: recipe.handle }),
+          ...(recipe.image_url && { image_url: recipe.image_url }),
+          ...(recipe.cooking_time && { cooking_time: recipe.cooking_time }),
+          ...(recipe.servings && { servings: recipe.servings }),
+        })
+        .eq("id", id)
+        .select()
+        .single()
+
+      if (recipeError) throw recipeError
+
+      // If updating ingredients, delete existing and add new ones
+      if (recipe.ingredients) {
+        // Delete existing ingredients
+        const { error: deleteError } = await supabase
+          .from("ingredients")
+          .delete()
+          .eq("recipe_id", id)
+
+        if (deleteError) throw deleteError
+
+        // Add new ingredients
+        if (recipe.ingredients.length > 0) {
+          const { error: ingredientsError } = await supabase
+            .from("ingredients")
+            .insert(
+              recipe.ingredients.map(ingredient => ({
+                ...ingredient,
+                recipe_id: id,
+              }))
+            )
+
+          if (ingredientsError) throw ingredientsError
+        }
+      }
+
+      // If updating instructions, delete existing and add new ones
+      if (recipe.instructions) {
+        // Delete existing instructions
+        const { error: deleteError } = await supabase
+          .from("instructions")
+          .delete()
+          .eq("recipe_id", id)
+
+        if (deleteError) throw deleteError
+
+        // Add new instructions
+        if (recipe.instructions.length > 0) {
+          const { error: instructionsError } = await supabase
+            .from("instructions")
+            .insert(
+              recipe.instructions.map(instruction => ({
+                ...instruction,
+                recipe_id: id,
+              }))
+            )
+
+          if (instructionsError) throw instructionsError
+        }
+      }
+
+      return recipeData
+    },
+    onSuccess: (data) => {
+      // Invalidate queries
+      queryClient.invalidateQueries({ queryKey: recipeKeys.lists() })
+      queryClient.invalidateQueries({ 
+        queryKey: recipeKeys.userRecipes(data.user_id)
+      })
+      queryClient.invalidateQueries({ 
+        queryKey: recipeKeys.detail(data.id)
+      })
+    },
+  })
+}
+
+export function useDeleteRecipe() {
+  const queryClient = useQueryClient()
+  const supabase = createClient()
+
+  return useMutation({
+    mutationFn: async (recipeId: string) => {
+      const { error } = await supabase
+        .from("recipes")
+        .delete()
+        .eq("id", recipeId)
+
+      if (error) throw error
+      return recipeId
+    },
+    onSuccess: (_data, variables) => {
+      // Invalidate queries
+      queryClient.invalidateQueries({ queryKey: recipeKeys.lists() })
+      queryClient.invalidateQueries({ 
+        queryKey: recipeKeys.userRecipes()
+      })
+      queryClient.invalidateQueries({ 
+        queryKey: recipeKeys.detail(variables)
+      })
+    },
+  })
+} 

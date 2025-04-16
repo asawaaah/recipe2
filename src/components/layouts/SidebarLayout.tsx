@@ -1,3 +1,4 @@
+import React from "react"
 import { AppSidebar } from "@/components/ui/sidebar/app-sidebar"
 import {
   Breadcrumb,
@@ -39,11 +40,11 @@ export function SidebarLayout({ children, breadcrumbs, showSearch = true }: Side
             <Breadcrumb>
               <BreadcrumbList>
                 {breadcrumbs.map((item, index) => (
-                  <>
+                  <React.Fragment key={item.label + "-" + index}>
                     {index > 0 && (
                       <BreadcrumbSeparator className="hidden md:block" />
                     )}
-                    <BreadcrumbItem key={item.label} className="hidden md:block">
+                    <BreadcrumbItem className="hidden md:block">
                       {item.isCurrentPage ? (
                         <BreadcrumbPage>{item.label}</BreadcrumbPage>
                       ) : (
@@ -52,7 +53,7 @@ export function SidebarLayout({ children, breadcrumbs, showSearch = true }: Side
                         </BreadcrumbLink>
                       )}
                     </BreadcrumbItem>
-                  </>
+                  </React.Fragment>
                 ))}
               </BreadcrumbList>
             </Breadcrumb>

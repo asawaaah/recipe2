@@ -4,16 +4,15 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { toast } from 'sonner'
 import { Eye, EyeOff } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { signInWithGoogle, signUp } from '@/lib/auth'
 import { SignUpInput, signUpSchema } from '@/lib/validators/auth'
 import { Separator } from '@/components/ui/separator'
+import { useAuthActions } from '@/state/hooks/useAuthActions'
 
 type FormStep = 'email' | 'username' | 'password'
 
@@ -26,7 +25,7 @@ const slideAnimation = {
 
 export function SignUpForm() {
   const router = useRouter()
-  const [isLoading, setIsLoading] = useState(false)
+  const { signUp, signInWithGoogle, isLoading, error } = useAuthActions()
   const [currentStep, setCurrentStep] = useState<FormStep>('email')
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
@@ -46,25 +45,17 @@ export function SignUpForm() {
 
   const onSubmit = async (data: SignUpInput) => {
     try {
-      setIsLoading(true)
       await signUp(data)
-      router.push(`/verify-email?email=${encodeURIComponent(data.email)}`)
-      router.refresh()
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to create account')
-    } finally {
-      setIsLoading(false)
+      console.error('Error in form submission:', error)
     }
   }
 
   const handleGoogleSignIn = async () => {
     try {
-      setIsLoading(true)
       await signInWithGoogle()
     } catch (error) {
-      toast.error('Failed to sign up with Google')
-    } finally {
-      setIsLoading(false)
+      console.error('Error with Google signin:', error)
     }
   }
 
@@ -87,6 +78,9 @@ export function SignUpForm() {
       <CardHeader>
         <CardTitle className="text-2xl">Create an account</CardTitle>
         <CardDescription>Enter your details to get started</CardDescription>
+        {error && (
+          <p className="text-sm text-red-500 mt-2">{error}</p>
+        )}
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -254,8 +248,12 @@ export function SignUpForm() {
       </CardContent>
       <CardFooter className="flex justify-center">
         <p className="text-sm text-muted-foreground">
-          Already have an account?{' '}
-          <Button variant="link" className="p-0" onClick={() => router.push('/login')}>
+          Already have an account?{" "}
+          <Button 
+            variant="link" 
+            className="h-auto p-0 text-primary"
+            onClick={() => router.push('/login')}
+          >
             Sign in
           </Button>
         </p>
