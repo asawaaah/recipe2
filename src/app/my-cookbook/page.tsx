@@ -10,13 +10,13 @@ import { Button } from "@/components/ui/button"
 import { Plus, Edit } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertTriangle } from "lucide-react"
-import { useState } from "react"
+import { usePreferences } from "@/state/hooks/usePreferences"
 import Link from "next/link"
 
 export default function MyCookbookPage() {
   const { profile } = useUser()
   const { data: recipes, isLoading, error } = useUserRecipes(profile?.id)
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const { recipeViewMode: viewMode } = usePreferences()
   
   return (
     <SidebarLayout
@@ -63,7 +63,7 @@ export default function MyCookbookPage() {
             <div className={`
               ${viewMode === 'grid' 
                 ? 'grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4' 
-                : 'flex flex-col gap-4'
+                : 'flex flex-col gap-2'
               }
             `}>
               {recipes.map((recipe) => (

@@ -52,7 +52,7 @@ const data = {
     },
     {
       title: "All recipes",
-      url: "all-recipes",
+      url: "/all-recipes",
       icon: Utensils,
       isActive: true,
       items: [

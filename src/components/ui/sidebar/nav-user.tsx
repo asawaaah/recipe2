@@ -1,11 +1,10 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useAuth } from "@/state/hooks/useAuth"
 import {
   BadgeCheck,
   Bell,
   ChevronsUpDown,
-  CreditCard,
   LogOut,
   User,
 } from "lucide-react"
@@ -30,55 +29,32 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { createClient } from "@/lib/supabase"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 
 export function NavUser() {
   const { isMobile } = useSidebar()
   const router = useRouter()
-  const [user, setUser] = useState<{
-    email: string
-    display_name?: string
-  } | null>(null)
-
-  useEffect(() => {
-    const supabase = createClient()
-    
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        setUser({
-          email: session.user.email!,
-          display_name: session.user.user_metadata.display_name
-        })
-      }
-    })
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session?.user) {
-        setUser({
-          email: session.user.email!,
-          display_name: session.user.user_metadata.display_name
-        })
-      } else {
-        setUser(null)
-      }
-    })
-
-    return () => {
-      subscription.unsubscribe()
-    }
-  }, [])
-
+  const { user, isLoading, signOut } = useAuth()
+  
   const handleSignOut = async () => {
-    const supabase = createClient()
-    await supabase.auth.signOut()
+    await signOut()
     router.push('/login')
     router.refresh()
   }
 
+  // Show loading state or sign in button based on auth state
+  if (isLoading) {
+    return (
+      <SidebarMenu>
+        <SidebarMenuItem>
+          {/* Optional: Add a subtle loading indicator here */}
+          <div className="h-10 w-full animate-pulse rounded-md bg-muted/50" />
+        </SidebarMenuItem>
+      </SidebarMenu>
+    )
+  }
+  
   if (!user) {
     return (
       <SidebarMenu>
@@ -99,6 +75,9 @@ export function NavUser() {
     )
   }
 
+  const email = user.email || ''
+  const display_name = user.user_metadata?.display_name
+
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -110,14 +89,14 @@ export function NavUser() {
             >
               <Avatar className="h-8 w-8 rounded-lg">
                 <AvatarFallback className="rounded-lg">
-                  {user.display_name?.[0]?.toUpperCase() || user.email[0].toUpperCase()}
+                  {display_name?.[0]?.toUpperCase() || email[0]?.toUpperCase() || 'U'}
                 </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-semibold">
-                  {user.display_name || 'User'}
+                  {display_name || 'User'}
                 </span>
-                <span className="truncate text-xs">{user.email}</span>
+                <span className="truncate text-xs">{email}</span>
               </div>
               <ChevronsUpDown className="ml-auto size-4" />
             </SidebarMenuButton>
@@ -132,14 +111,14 @@ export function NavUser() {
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
                   <AvatarFallback className="rounded-lg">
-                    {user.display_name?.[0]?.toUpperCase() || user.email[0].toUpperCase()}
+                    {display_name?.[0]?.toUpperCase() || email[0]?.toUpperCase() || 'U'}
                   </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-semibold">
-                    {user.display_name || 'User'}
+                    {display_name || 'User'}
                   </span>
-                  <span className="truncate text-xs">{user.email}</span>
+                  <span className="truncate text-xs">{email}</span>
                 </div>
               </div>
             </DropdownMenuLabel>

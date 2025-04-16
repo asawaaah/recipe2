@@ -6,28 +6,14 @@ import { RecipeCardSkeleton } from "@/components/blocks/RecipeCardSkeleton"
 import { RecipeViewToggle } from "@/components/ui/recipe-view-toggle"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertTriangle } from "lucide-react"
-import { useState, useEffect } from "react"
+import { usePreferences } from "@/state/hooks/usePreferences"
 
 export default function AllRecipes() {
   // Fetch recipes using React Query
   const { data: recipes, isLoading, error } = useRecipes()
   
-  // Use local state for view mode
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
-  
-  // Try to get view mode from preferences
-  useEffect(() => {
-    try {
-      // Dynamically import to avoid the error if PreferencesProvider is not available
-      const { usePreferences } = require("@/state/hooks/usePreferences")
-      const preferences = usePreferences()
-      if (preferences && preferences.recipeViewMode) {
-        setViewMode(preferences.recipeViewMode)
-      }
-    } catch (error) {
-      // Fallback to grid view if preferences aren't available
-    }
-  }, [])
+  // Get view mode from preferences
+  const { recipeViewMode: viewMode } = usePreferences()
   
   // Loading state
   if (isLoading) {
@@ -70,7 +56,7 @@ export default function AllRecipes() {
       <div className={`
         ${viewMode === 'grid' 
           ? 'grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5' 
-          : 'flex flex-col gap-4'
+          : 'flex flex-col gap-2'
         }
       `}>
         {recipes && recipes.length > 0 ? (
