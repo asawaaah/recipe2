@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { Grid, List } from "lucide-react"
+import { useEffect, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -13,7 +14,14 @@ import {
 import { usePreferences } from "@/state/hooks/usePreferences"
 
 export function RecipeViewToggle() {
-  const { recipeViewMode: viewMode, setRecipeViewMode } = usePreferences()
+  const { recipeViewMode, setRecipeViewMode } = usePreferences()
+  // Use local state to track the view mode after hydration
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>("grid")
+  
+  // Update local state when the preference changes or after hydration
+  useEffect(() => {
+    setViewMode(recipeViewMode)
+  }, [recipeViewMode])
 
   return (
     <TooltipProvider>
