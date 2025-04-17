@@ -37,7 +37,7 @@ export function RecipeCard({
     return (
       <Link href={`/recipes/${id}`}>
         <Card className={cn(
-          "h-full overflow-hidden transition-all hover:shadow-lg",
+          "h-full overflow-hidden transition-all hover:shadow-lg flex flex-col",
           className
         )}>
           {imageUrl && (
@@ -51,22 +51,22 @@ export function RecipeCard({
               />
             </div>
           )}
-          <div className="flex flex-col">
+          <div className="flex flex-col flex-1 justify-between">
             <CardHeader className="px-2">
               <CardTitle className="line-clamp-2">{title}</CardTitle>
               <CardDescription className="line-clamp-2">{description}</CardDescription>
             </CardHeader>
-            <CardContent className="p-2 pb-4 pt-0">
-              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <CardContent className="p-2 pb-4 pt-0 mt-auto">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
                 {cookingTime && (
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-4 w-4" />
+                  <div className="flex items-center gap-1 min-w-[80px]">
+                    <Clock className="h-4 w-4 flex-shrink-0" />
                     <span>{cookingTime} min</span>
                   </div>
                 )}
                 {servings && (
-                  <div className="flex items-center gap-1">
-                    <Users className="h-4 w-4" />
+                  <div className="flex items-center gap-1 min-w-[80px]">
+                    <Users className="h-4 w-4 flex-shrink-0" />
                     <span>{servings} servings</span>
                   </div>
                 )}
@@ -91,16 +91,16 @@ export function RecipeCard({
             <CardDescription className="line-clamp-1">{description}</CardDescription>
           </CardHeader>
           <CardContent className="p-2 py-0">
-            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
               {cookingTime && (
                 <div className="flex items-center gap-1">
-                  <Clock className="h-4 w-4" />
+                  <Clock className="h-4 w-4 flex-shrink-0" />
                   <span>{cookingTime} min</span>
                 </div>
               )}
               {servings && (
                 <div className="flex items-center gap-1">
-                  <Users className="h-4 w-4" />
+                  <Users className="h-4 w-4 flex-shrink-0" />
                   <span>{servings} servings</span>
                 </div>
               )}
