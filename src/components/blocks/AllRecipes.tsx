@@ -9,10 +9,14 @@ import { AlertTriangle } from "lucide-react"
 import { usePreferences } from "@/state/hooks/usePreferences"
 import { RecipeTranslation } from '@/services/recipes/types'
 import { useLang } from '@/app/providers'
+import { useTranslation } from '@/hooks/useTranslation'
 
 export default function AllRecipes() {
   // Get current language from context
   const currentLang = useLang()
+  
+  // Get translations
+  const { t } = useTranslation()
   
   // Fetch recipes using React Query with locale filter
   const { data: recipes, isLoading, error } = useRecipes({ locale: currentLang })
@@ -25,7 +29,7 @@ export default function AllRecipes() {
     return (
       <div className="space-y-4">
         <div className="flex justify-between">
-          <h1 className="text-2xl font-bold">All Recipes</h1>
+          <h1 className="text-2xl font-bold">{t('common.allRecipes')}</h1>
           <RecipeViewToggle />
         </div>
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
@@ -42,9 +46,9 @@ export default function AllRecipes() {
     return (
       <Alert variant="destructive">
         <AlertTriangle className="h-4 w-4" />
-        <AlertTitle>Error</AlertTitle>
+        <AlertTitle>{t('errors.general')}</AlertTitle>
         <AlertDescription>
-          Failed to load recipes. Please try again later.
+          {t('errors.loadingFailed')}
         </AlertDescription>
       </Alert>
     )
@@ -53,7 +57,7 @@ export default function AllRecipes() {
   return (
     <div className="space-y-4">
       <div className="flex justify-between">
-        <h1 className="text-2xl font-bold">All Recipes ({recipes?.length || 0})</h1>
+        <h1 className="text-2xl font-bold">{t('common.allRecipes')} ({recipes?.length || 0})</h1>
         <RecipeViewToggle />
       </div>
       
@@ -85,7 +89,7 @@ export default function AllRecipes() {
           ))
         ) : (
           <p className="text-center text-muted-foreground py-8">
-            No recipes found. Try adding some new recipes!
+            {t('recipe.emptyRecipes')}
           </p>
         )}
       </div>

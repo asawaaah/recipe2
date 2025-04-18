@@ -11,6 +11,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { AlertTriangle, RefreshCcw } from 'lucide-react'
 import { useRecipeByHandle } from '@/state/hooks/useRecipes'
 import { Button } from '@/components/ui/button'
+import { useTranslation } from '@/hooks/useTranslation'
 
 interface RecipeDetailViewProps {
   handle: string
@@ -20,6 +21,7 @@ export default function RecipeDetailView({ handle }: RecipeDetailViewProps) {
   const router = useRouter()
   const { data: recipe, isLoading, error, refetch } = useRecipeByHandle(handle)
   const [retryCount, setRetryCount] = useState(0)
+  const { t } = useTranslation()
   
   // Redirect to not found page if recipe doesn't exist
   useEffect(() => {
@@ -122,13 +124,13 @@ export default function RecipeDetailView({ handle }: RecipeDetailViewProps) {
         {recipe.cooking_time && (
           <Badge variant="secondary" className="flex items-center gap-1">
             <Clock className="w-4 h-4" />
-            {recipe.cooking_time} minutes
+            {recipe.cooking_time} {t('recipe.minutes')}
           </Badge>
         )}
         {recipe.servings && (
           <Badge variant="secondary" className="flex items-center gap-1">
             <Users className="w-4 h-4" />
-            {recipe.servings} servings
+            {recipe.servings} {t('recipe.servings')}
           </Badge>
         )}
         <Badge variant="outline">

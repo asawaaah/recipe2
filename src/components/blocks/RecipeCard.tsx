@@ -3,6 +3,7 @@ import Image from "next/image"
 import { cn } from "@/lib/utils"
 import { LocalizedLink } from "@/components/i18n/LocalizedLink"
 import { useLang } from "@/app/providers"
+import { useTranslation } from "@/hooks/useTranslation"
 
 import {
   Card,
@@ -41,6 +42,7 @@ export function RecipeCard({
   translations = [],
 }: RecipeCardProps) {
   const currentLang = useLang()
+  const { t } = useTranslation()
   
   // Get the localized handle if available, otherwise use the default handle
   const localizedHandle = translations.find(t => t.locale === currentLang)?.handle || handle
@@ -74,13 +76,13 @@ export function RecipeCard({
                 {cookingTime && (
                   <div className="flex items-center gap-1 min-w-[80px]">
                     <Clock className="h-4 w-4 flex-shrink-0" />
-                    <span>{cookingTime} min</span>
+                    <span>{cookingTime} {t('recipe.minutes')}</span>
                   </div>
                 )}
                 {servings && (
                   <div className="flex items-center gap-1 min-w-[80px]">
                     <Users className="h-4 w-4 flex-shrink-0" />
-                    <span>{servings} servings</span>
+                    <span>{servings} {t('recipe.servings')}</span>
                   </div>
                 )}
               </div>
@@ -108,13 +110,13 @@ export function RecipeCard({
               {cookingTime && (
                 <div className="flex items-center gap-1">
                   <Clock className="h-4 w-4 flex-shrink-0" />
-                  <span>{cookingTime} min</span>
+                  <span>{cookingTime} {t('recipe.minutes')}</span>
                 </div>
               )}
               {servings && (
                 <div className="flex items-center gap-1">
                   <Users className="h-4 w-4 flex-shrink-0" />
-                  <span>{servings} servings</span>
+                  <span>{servings} {t('recipe.servings')}</span>
                 </div>
               )}
             </div>

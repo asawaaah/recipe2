@@ -41,7 +41,7 @@ export default async function RootLayout({
 
   return (
     <html lang={params.lang} suppressHydrationWarning>
-      <body className="min-h-screen bg-background font-sans antialiased">
+      <body className="min-h-screen bg-background font-sans antialiased" suppressHydrationWarning>
         <TranslationProvider dictionary={dictionary} locale={params.lang as Locale}>
           <Providers lang={params.lang as Locale}>{children}</Providers>
         </TranslationProvider>

@@ -1,4 +1,7 @@
 {
+  "handle": {
+    "recipes": "recettes"
+  },
   "common": {
     "home": "Accueil",
     "allRecipes": "Toutes les Recettes",

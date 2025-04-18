@@ -1,4 +1,7 @@
 {
+  "handle": {
+    "recipes": "recipes"
+  },
   "common": {
     "home": "Home",
     "allRecipes": "All Recipes",
