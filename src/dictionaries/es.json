@@ -12,7 +12,9 @@
     "cancel": "Cancelar",
     "delete": "Eliminar",
     "welcome": "Bienvenido a Recipe App",
-    "welcomeMessage": "Comparte y descubre increíbles recetas de todo el mundo"
+    "welcomeMessage": "Comparte y descubre increíbles recetas de todo el mundo",
+    "loading": "Cargando contenido",
+    "retry": "Reintentar"
   },
   "recipe": {
     "title": "Título",

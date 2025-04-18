@@ -12,6 +12,7 @@ import { AlertTriangle, RefreshCcw } from 'lucide-react'
 import { useRecipeByHandle } from '@/state/hooks/useRecipes'
 import { Button } from '@/components/ui/button'
 import { useTranslation } from '@/components/i18n/TranslationContext'
+import { Recipe } from '@/services/recipes/types'
 
 interface RecipeDetailViewProps {
   handle: string
@@ -21,7 +22,7 @@ export default function RecipeDetailView({ handle }: RecipeDetailViewProps) {
   const router = useRouter()
   const { data: recipe, isLoading, error, refetch } = useRecipeByHandle(handle)
   const [retryCount, setRetryCount] = useState(0)
-  const { t } = useTranslation()
+  const { t, locale } = useTranslation()
   
   // Redirect to not found page if recipe doesn't exist
   useEffect(() => {
@@ -39,7 +40,7 @@ export default function RecipeDetailView({ handle }: RecipeDetailViewProps) {
   // Loading state
   if (isLoading) {
     return (
-      <div className="container py-10">
+      <div className="container py-10" aria-busy="true" aria-label={t('common.loading')}>
         <Skeleton className="h-10 w-2/3 mb-6" />
         <div className="flex gap-4 mb-6">
           <Skeleton className="h-6 w-32" />
@@ -81,7 +82,7 @@ export default function RecipeDetailView({ handle }: RecipeDetailViewProps) {
                           errorMessage.includes('The result contains 0 rows')
     
     return (
-      <Alert variant="destructive" className="m-4">
+      <Alert variant="destructive" className="m-4" role="alert">
         <AlertTriangle className="h-4 w-4" />
         <AlertTitle>{t('errors.general')}</AlertTitle>
         <AlertDescription className="space-y-4">
@@ -113,31 +114,43 @@ export default function RecipeDetailView({ handle }: RecipeDetailViewProps) {
     return null
   }
   
+  // Get the current translation if available
+  const currentTranslation = recipe.translations?.find(
+    (t: {locale: string}) => t.locale === locale
+  );
+  
+  // Use translated content if available, otherwise use default
+  const title = currentTranslation?.title || recipe.title;
+  const description = currentTranslation?.description || recipe.description;
+  
   const authorName = recipe.user?.username 
     ? `${recipe.user.username}`
     : t('recipe.unknownChef')
   
   return (
     <div className="container py-10">
-      <h1 className="text-4xl font-bold mb-6">{recipe.title}</h1>
+      <h1 className="text-4xl font-bold mb-6">{title}</h1>
+      {description && (
+        <p className="text-lg mb-6 text-muted-foreground">{description}</p>
+      )}
       <div className="flex flex-wrap gap-4 mb-6">
         {recipe.cooking_time && (
           <Badge variant="secondary" className="flex items-center gap-1">
-            <Clock className="w-4 h-4" />
-            {recipe.cooking_time} {t('recipe.minutes')}
+            <Clock className="w-4 h-4" aria-hidden="true" />
+            <span>{recipe.cooking_time} {t('recipe.minutes')}</span>
           </Badge>
         )}
         {recipe.servings && (
           <Badge variant="secondary" className="flex items-center gap-1">
-            <Users className="w-4 h-4" />
-            {recipe.servings} {t('recipe.servings')}
+            <Users className="w-4 h-4" aria-hidden="true" />
+            <span>{recipe.servings} {t('recipe.servings')}</span>
           </Badge>
         )}
         <Badge variant="outline">
-          {t('recipe.authoredBy')} <LocalizedLink href={`/users/${recipe.user?.username || 'unknown'}`} className="hover:underline ml-1">{authorName}</LocalizedLink>
+          <span>{t('recipe.authoredBy')}</span> <LocalizedLink href={`/users/${recipe.user?.username || 'unknown'}`} className="hover:underline ml-1">{authorName}</LocalizedLink>
         </Badge>
       </div>
-      <RecipeDetails recipe={recipe} />
+      <RecipeDetails recipe={{...recipe, title, description}} />
     </div>
   )
 } 

@@ -21,9 +21,26 @@ export async function generateMetadata({ params }: RecipePageProps): Promise<Met
   const recipe = await fetchRecipeByHandle(handle, lang)
   if (!recipe) return {}
 
+  // Get translation for the requested language if available
+  const currentTranslation = (recipe as RecipeType).translations?.find(
+    t => t.locale === lang
+  );
+  
+  // Use translated content if available, otherwise use default content
+  const title = currentTranslation?.title || recipe.title;
+  const description = currentTranslation?.description || recipe.description;
+
   const authorName = recipe.user?.username 
     ? `${recipe.user.username}`
-    : 'Unknown Chef'
+    : (lang === 'fr' ? 'Chef Inconnu' : 
+       lang === 'es' ? 'Chef Desconocido' : 
+       lang === 'de' ? 'Unbekannter Koch' : 'Unknown Chef');
+
+  // Format the title properly for the current language
+  const formattedTitle = lang === 'fr' ? `${title} par ${authorName}` :
+                          lang === 'es' ? `${title} por ${authorName}` :
+                          lang === 'de' ? `${title} von ${authorName}` :
+                          `${title} by ${authorName}`;
 
   // Generate alternate URLs for each language with localized handles
   const alternateLanguages: Record<string, string> = {}
@@ -48,9 +65,29 @@ export async function generateMetadata({ params }: RecipePageProps): Promise<Met
   // If no translation and not in default language, indicate this page is a translation of the default
   const isDefaultLanguage = lang === 'en'
 
+  // Create JSON-LD structured data for Recipe
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Recipe',
+    name: title,
+    description: description,
+    author: {
+      '@type': 'Person',
+      name: recipe.user?.username || authorName
+    },
+    image: recipe.image_url ? [recipe.image_url] : [],
+    recipeIngredient: recipe.ingredients?.map(ing => `${ing.amount} ${ing.unit} ${ing.name}`) || [],
+    recipeInstructions: recipe.instructions?.map(inst => ({
+      '@type': 'HowToStep',
+      text: inst.description
+    })) || [],
+    cookTime: recipe.cooking_time ? `PT${recipe.cooking_time}M` : undefined,
+    recipeYield: recipe.servings ? `${recipe.servings} servings` : undefined
+  };
+
   return {
-    title: `${recipe.title} by ${authorName}`,
-    description: recipe.description,
+    title: formattedTitle,
+    description: description,
     alternates: {
       languages: alternateLanguages,
       canonical: isDefaultLanguage || hasTranslation 
@@ -58,11 +95,26 @@ export async function generateMetadata({ params }: RecipePageProps): Promise<Met
         : getLocalizedCanonical('/recipes/[handle]', 'en', { handle: recipe.handle }),
     },
     openGraph: {
-      title: recipe.title,
-      description: recipe.description,
+      title: title,
+      description: description,
       images: recipe.image_url ? [recipe.image_url] : [],
       locale: lang,
       type: 'article',
+    },
+    // Add additional metadata
+    formatDetection: {
+      telephone: false,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: title,
+      description: description,
+      images: recipe.image_url ? [recipe.image_url] : [],
+    },
+    // Merged other properties
+    other: {
+      'robots': 'index, follow',
+      'script:ld+json': JSON.stringify(jsonLd),
     },
   }
 }

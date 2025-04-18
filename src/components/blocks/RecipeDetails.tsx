@@ -13,7 +13,7 @@ interface RecipeDetailsProps {
 
 const RecipeDetails = ({ recipe }: RecipeDetailsProps) => {
   if (!recipe) return null
-  const { t } = useTranslation()
+  const { t, locale } = useTranslation()
 
   return (
     <div className="container mx-auto py-8 px-4">
@@ -28,29 +28,30 @@ const RecipeDetails = ({ recipe }: RecipeDetailsProps) => {
                   alt={recipe.title}
                   fill
                   priority
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   className="rounded-lg object-cover"
                 />
               ) : (
-                <div className="h-full w-full rounded-lg bg-muted" />
+                <div className="h-full w-full rounded-lg bg-muted" aria-label={t('recipe.noImage')} />
               )}
             </AspectRatio>
           </div>
           <div className="flex gap-4 justify-center mt-6">
             {recipe.cooking_time && (
               <Badge variant="secondary" className="flex items-center gap-2">
-                <Clock className="h-4 w-4" />
-                {recipe.cooking_time} {t('recipe.minutes')}
+                <Clock className="h-4 w-4" aria-hidden="true" />
+                <span>{recipe.cooking_time} {t('recipe.minutes')}</span>
               </Badge>
             )}
             {recipe.servings && (
               <Badge variant="secondary" className="flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                {recipe.servings} {t('recipe.servings')}
+                <Users className="h-4 w-4" aria-hidden="true" />
+                <span>{recipe.servings} {t('recipe.servings')}</span>
               </Badge>
             )}
             {recipe.user && (
               <Badge variant="secondary" className="flex items-center gap-2">
-                <User className="h-4 w-4" />
+                <User className="h-4 w-4" aria-hidden="true" />
                 <LocalizedLink 
                   href={`/users/${recipe.user.username}`}
                   className="hover:text-primary transition-colors"
@@ -71,7 +72,7 @@ const RecipeDetails = ({ recipe }: RecipeDetailsProps) => {
           </CardHeader>
           <CardContent>
             <div className="mt-8">
-              <ul className="mt-4 space-y-2">
+              <ul className="mt-4 space-y-2" aria-label={t('recipe.ingredients')}>
                 {recipe.ingredients?.map((ingredient) => (
                   <li key={ingredient.id} className="flex items-center gap-2">
                     <span>{ingredient.amount}</span>
@@ -91,10 +92,10 @@ const RecipeDetails = ({ recipe }: RecipeDetailsProps) => {
           </CardHeader>
           <CardContent>
             <div className="mt-8">
-              <ol className="mt-4 space-y-4">
+              <ol className="mt-4 space-y-4" aria-label={t('recipe.instructions')}>
                 {recipe.instructions?.map((instruction) => (
                   <li key={instruction.id} className="flex gap-4">
-                    <span className="font-semibold">{instruction.step_number}.</span>
+                    <span className="font-semibold" aria-hidden="true">{instruction.step_number}.</span>
                     <p>{instruction.description}</p>
                   </li>
                 ))}

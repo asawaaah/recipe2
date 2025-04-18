@@ -13,6 +13,7 @@ import {
 import { usePreferences } from '@/state/providers/PreferencesProvider'
 import { useLang } from '@/app/providers'
 import { getInternalPathSegment, getLocalizedPathSegment } from '@/utils/route-mappings-data'
+import { createClient } from '@/lib/supabase'
 
 // Map of language codes to their names
 const languageNames: Record<Locale, string> = {
@@ -42,7 +43,126 @@ export function LanguageSwitcher({ compact = false }: LanguageSwitcherProps) {
   const { setLanguage } = usePreferences()
   const router = useRouter()
   
-  const switchLanguage = (newLocale: Locale) => {
+  // Helper function to check if a path is a recipe page
+  const isRecipePage = (path: string) => {
+    // Check for various localized recipe paths
+    return path.includes('/recipes/') || 
+           path.includes('/recettes/') || 
+           path.includes('/recetas/') || 
+           path.includes('/rezepte/');
+  }
+  
+  // Helper function to extract handle from a recipe URL
+  const extractHandleFromPath = (path: string) => {
+    return path.split('/').pop();
+  }
+  
+  // Helper function to get translated handle for a recipe
+  const getTranslatedRecipeHandle = async (handle: string, sourceLang: Locale, targetLang: Locale) => {
+    if (!handle) return null;
+    
+    try {
+      // Utiliser le client singleton au lieu d'en créer un nouveau
+      const supabase = createClient();
+      
+      // CAS 1: Si on va vers l'anglais (qui est la langue par défaut)
+      if (targetLang === 'en') {
+        // Étape 1: Essayer de trouver la recipe_id à partir du handle source
+        let recipeId = null;
+        
+        // Si la source est déjà en anglais, pas besoin de chercher
+        if (sourceLang === 'en') return handle;
+        
+        // Sinon, trouver la recipe_id à partir de la traduction actuelle
+        const { data: sourceTranslation } = await supabase
+          .from('recipe_translations')
+          .select('recipe_id')
+          .eq('handle', handle)
+          .eq('locale', sourceLang)
+          .maybeSingle();
+        
+        recipeId = sourceTranslation?.recipe_id;
+        
+        // Si on a trouvé un ID de recette, chercher le handle anglais dans la table recipes
+        if (recipeId) {
+          const { data: recipe } = await supabase
+            .from('recipes')
+            .select('handle')
+            .eq('id', recipeId)
+            .single();
+          
+          if (recipe?.handle) {
+            return recipe.handle; // Retourner le handle anglais de la table principale
+          }
+        }
+        
+        // Fallback si on n'a pas trouvé le handle anglais
+        return handle;
+      }
+      
+      // CAS 2: Si la source est l'anglais et on va vers une autre langue
+      if (sourceLang === 'en') {
+        // Trouver la recette directement par son handle anglais
+        const { data: recipe } = await supabase
+          .from('recipes')
+          .select('id')
+          .eq('handle', handle)
+          .maybeSingle();
+        
+        const recipeId = recipe?.id;
+        
+        // Si on a trouvé un ID, chercher la traduction dans la langue cible
+        if (recipeId) {
+          const { data: targetTranslation } = await supabase
+            .from('recipe_translations')
+            .select('handle')
+            .eq('recipe_id', recipeId)
+            .eq('locale', targetLang)
+            .maybeSingle();
+          
+          if (targetTranslation?.handle) {
+            return targetTranslation.handle;
+          }
+        }
+        
+        // Fallback si on n'a pas trouvé de traduction
+        return handle;
+      }
+      
+      // CAS 3: Transition entre deux langues non-anglaises (fr->es, es->de, etc.)
+      // Étape 1: Trouver recipe_id à partir du handle source
+      const { data: sourceTranslation } = await supabase
+        .from('recipe_translations')
+        .select('recipe_id')
+        .eq('handle', handle)
+        .eq('locale', sourceLang)
+        .maybeSingle();
+      
+      const recipeId = sourceTranslation?.recipe_id;
+      
+      // Étape 2: Si on a un recipe_id, chercher la traduction dans la langue cible
+      if (recipeId) {
+        const { data: targetTranslation } = await supabase
+          .from('recipe_translations')
+          .select('handle')
+          .eq('recipe_id', recipeId)
+          .eq('locale', targetLang)
+          .maybeSingle();
+        
+        if (targetTranslation?.handle) {
+          return targetTranslation.handle;
+        }
+      }
+      
+      // Fallback: retourner le handle original
+      return handle;
+    } catch (error) {
+      console.error('Error getting translated handle:', error);
+      return handle;
+    }
+  }
+  
+  const switchLanguage = async (newLocale: Locale) => {
     // Don't redirect if we're already on this locale
     if (newLocale === currentLang) return
     
@@ -51,6 +171,28 @@ export function LanguageSwitcher({ compact = false }: LanguageSwitcherProps) {
     
     // Parse the path segments to handle localized paths
     const segments = pathname.split('/').filter(Boolean)
+    
+    // Check if we're on a recipe page
+    if (isRecipePage(pathname) && segments.length > 2) {
+      // Extract the current handle
+      const currentHandle = extractHandleFromPath(pathname);
+      
+      // Get the translated handle for the target language
+      const translatedHandle = await getTranslatedRecipeHandle(
+        currentHandle!, 
+        currentLang, 
+        newLocale
+      );
+      
+      // Get the recipe route segment for the target language
+      const recipeSegment = getLocalizedPathSegment(newLocale, 'recipes');
+      
+      // Construct the new URL
+      const newPath = `/${newLocale}/${recipeSegment}/${translatedHandle}`;
+      
+      router.push(newPath);
+      return;
+    }
     
     if (segments.length > 1 && isValidLocale) {
       const currentLocalizedSegment = segments[1]

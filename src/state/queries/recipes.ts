@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { createClient } from "@/lib/supabase"
+import { useTranslation } from "@/components/i18n/TranslationContext"
 
 // Types
 type CreateRecipeData = {
@@ -183,15 +184,96 @@ export function useRecipe(recipeId: string | undefined) {
 
 export function useRecipeByHandle(handle: string | undefined) {
   const supabase = createClient()
+  const { locale } = useTranslation()
   
   return useQuery({
-    queryKey: recipeKeys.detail(handle || ''),
+    queryKey: [...recipeKeys.detail(handle || ''), locale],
     queryFn: async () => {
       if (!handle) return null
       
       try {
-        // First, try to find a recipe translation with this handle
+        // Cas spécial: si on est en anglais, essayer de trouver directement le recipe par handle
+        if (locale === 'en') {
+          // Essayer d'abord de trouver la recette directement par handle anglais
+          const { data: directData, error: directError } = await supabase
+            .from("recipes")
+            .select(`
+              *,
+              ingredients(*),
+              instructions(*),
+              user:users!recipes_user_id_fkey(
+                id, username
+              ),
+              translations:recipe_translations(*)
+            `)
+            .eq("handle", handle)
+            .maybeSingle()
+          
+          if (directData) {
+            return directData
+          }
+          
+          // Si on n'a pas trouvé directement, c'est peut-être un handle traduit
+          // Essayons de trouver la traduction et d'utiliser son recipe_id
+          const { data: translationData } = await supabase
+            .from("recipe_translations")
+            .select(`recipe_id`)
+            .eq("handle", handle)
+            .maybeSingle()
+          
+          if (translationData?.recipe_id) {
+            // Maintenant qu'on a l'ID, récupérer la recette en anglais
+            const { data, error } = await supabase
+              .from("recipes")
+              .select(`
+                *,
+                ingredients(*),
+                instructions(*),
+                user:users!recipes_user_id_fkey(
+                  id, username
+                ),
+                translations:recipe_translations(*)
+              `)
+              .eq("id", translationData.recipe_id)
+              .single()
+            
+            if (data) {
+              return data
+            }
+          }
+        }
+        
+        // Pour les autres langues, essayer de trouver une traduction spécifique
         const { data: translationData, error: translationError } = await supabase
+          .from("recipe_translations")
+          .select(`
+            *,
+            recipe:recipes(
+              *,
+              ingredients(*),
+              instructions(*),
+              user:users!recipes_user_id_fkey(
+                id, username
+              ),
+              translations:recipe_translations(*)
+            )
+          `)
+          .eq("handle", handle)
+          .eq("locale", locale)
+          .maybeSingle()
+          
+        // Si on a trouvé une traduction spécifique pour la locale actuelle
+        if (translationData?.recipe) {
+          console.log('Found recipe through translation for locale:', locale)
+          return {
+            ...translationData.recipe,
+            title: translationData.title,
+            description: translationData.description
+          }
+        }
+        
+        // Si pas de traduction spécifique, chercher par handle dans n'importe quelle langue
+        const { data: anyTranslationData, error: anyTranslationError } = await supabase
           .from("recipe_translations")
           .select(`
             *,
@@ -208,17 +290,33 @@ export function useRecipeByHandle(handle: string | undefined) {
           .eq("handle", handle)
           .maybeSingle()
           
-        // If we found a translation, return the recipe with that translation
-        if (translationData?.recipe) {
-          console.log('Found recipe through translation:', translationData.recipe)
+        // Si on a trouvé une traduction, appliquer celle pour la langue actuelle si disponible
+        if (anyTranslationData?.recipe) {
+          const recipe = anyTranslationData.recipe
+          
+          // Vérifier s'il y a une traduction pour la langue actuelle
+          const currentLocaleTranslation = recipe.translations.find(
+            (t: any) => t.locale === locale
+          )
+          
+          if (currentLocaleTranslation) {
+            // Utiliser la traduction dans la langue actuelle
+            return {
+              ...recipe,
+              title: currentLocaleTranslation.title,
+              description: currentLocaleTranslation.description
+            }
+          }
+          
+          // Sinon utiliser la traduction trouvée
           return {
-            ...translationData.recipe,
-            title: translationData.title,
-            description: translationData.description
+            ...recipe,
+            title: anyTranslationData.title,
+            description: anyTranslationData.description
           }
         }
         
-        // If no translation found, try to find recipe directly by handle
+        // En dernier recours, essayer de trouver la recette directement par handle
         const { data, error } = await supabase
           .from("recipes")
           .select(`
@@ -234,7 +332,6 @@ export function useRecipeByHandle(handle: string | undefined) {
           .single()
         
         if (error) {
-          // Check if it's a "no rows returned" error (recipe not found)
           if (error.code === 'PGRST116' || error.message.includes('no rows')) {
             throw new Error(`Recipe with handle "${handle}" not found`)
           }
@@ -245,9 +342,22 @@ export function useRecipeByHandle(handle: string | undefined) {
           throw new Error(`Recipe with handle "${handle}" not found`)
         }
         
+        // Chercher une traduction dans la langue actuelle
+        const localeTranslation = data.translations.find(
+          (t: any) => t.locale === locale
+        )
+        
+        if (localeTranslation) {
+          return {
+            ...data,
+            title: localeTranslation.title,
+            description: localeTranslation.description
+          }
+        }
+        
         return data
       } catch (err) {
-        // Only log and rethrow for unexpected errors, not for "not found" errors
+        // Loguer et relancer uniquement pour les erreurs inattendues
         if (err instanceof Error && 
             !err.message.includes('not found')) {
           console.error('Error fetching recipe by handle:', err)
@@ -384,6 +494,7 @@ export function useUpdateRecipe() {
         })
         .eq("id", id)
         .select()
+        .single()
 
       if (recipeError) throw recipeError
 

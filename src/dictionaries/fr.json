@@ -15,7 +15,9 @@
     "cancel": "Annuler",
     "delete": "Supprimer",
     "welcome": "Bienvenue sur Recipe App",
-    "welcomeMessage": "Partagez et découvrez des recettes incroyables du monde entier"
+    "welcomeMessage": "Partagez et découvrez des recettes incroyables du monde entier",
+    "loading": "Chargement en cours",
+    "retry": "Réessayer"
   },
   "homepage": {
     "viewComponents": "Voir les Composants UI",

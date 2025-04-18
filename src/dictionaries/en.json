@@ -15,7 +15,9 @@
     "cancel": "Cancel",
     "delete": "Delete",
     "welcome": "Welcome to Recipe App",
-    "welcomeMessage": "Share and discover amazing recipes from around the world"
+    "welcomeMessage": "Share and discover amazing recipes from around the world",
+    "loading": "Loading content",
+    "retry": "Retry"
   },
   "homepage": {
     "viewComponents": "View UI Components",
