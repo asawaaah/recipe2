@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { usePreferences } from '@/state/providers/PreferencesProvider'
 import { useLang } from '@/app/providers'
+import { getInternalPathSegment, getLocalizedPathSegment } from '@/utils/route-mappings-data'
 
 // Map of language codes to their names
 const languageNames: Record<Locale, string> = {
@@ -41,15 +42,42 @@ export function LanguageSwitcher({ compact = false }: LanguageSwitcherProps) {
   const { setLanguage } = usePreferences()
   const router = useRouter()
   
-  // Path without the locale
-  const pathnameWithoutLocale = pathname.split('/').slice(2).join('/')
-  
   const switchLanguage = (newLocale: Locale) => {
     // Don't redirect if we're already on this locale
     if (newLocale === currentLang) return
     
     // Update language preference in the context
     setLanguage(newLocale)
+    
+    // Parse the path segments to handle localized paths
+    const segments = pathname.split('/').filter(Boolean)
+    
+    if (segments.length > 1 && isValidLocale) {
+      const currentLocalizedSegment = segments[1]
+      
+      // Check if the current segment is a localized one in the current language
+      const internalSegment = getInternalPathSegment(currentLang, currentLocalizedSegment)
+      
+      if (internalSegment) {
+        // Now find the corresponding localized segment in the target language
+        const targetLocalizedSegment = getLocalizedPathSegment(newLocale, internalSegment)
+        
+        // Build the new path with the target language and localized segment
+        const newPath = [
+          '', // For leading slash
+          newLocale,
+          targetLocalizedSegment,
+          ...segments.slice(2) // Keep any remaining path segments
+        ].join('/')
+        
+        router.push(newPath)
+        return
+      }
+    }
+    
+    // Fallback to the standard approach if we couldn't do path translation
+    // Path without the locale
+    const pathnameWithoutLocale = segments.length > 1 ? segments.slice(1).join('/') : ''
     
     // Redirect to the same page but with the new locale
     router.push(`/${newLocale}${pathnameWithoutLocale ? `/${pathnameWithoutLocale}` : ''}`)

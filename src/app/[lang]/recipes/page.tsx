@@ -3,6 +3,7 @@ import { SidebarLayout } from "@/components/layouts/SidebarLayout"
 import AllRecipes from "@/components/blocks/AllRecipes"
 import { Locale, locales } from "@/middleware"
 import { getTranslations } from "@/utils/server-dictionary"
+import { getLocalizedCanonical } from "@/utils/localized-routes"
 
 interface RecipesPageProps {
   params: { 
@@ -19,7 +20,8 @@ export async function generateMetadata({ params }: RecipesPageProps): Promise<Me
   // Generate alternate URLs for each language
   const alternateLanguages: Record<string, string> = {}
   locales.forEach(locale => {
-    alternateLanguages[locale] = `/${locale}/recipes`
+    // Generate a localized alternate URL for each language
+    alternateLanguages[locale] = getLocalizedCanonical('/recipes', locale)
   })
   
   return {
@@ -27,7 +29,7 @@ export async function generateMetadata({ params }: RecipesPageProps): Promise<Me
     description: t('common.welcomeMessage'),
     alternates: {
       languages: alternateLanguages,
-      canonical: `/${lang}/recipes`,
+      canonical: getLocalizedCanonical('/recipes', lang),
     },
     openGraph: {
       title: t('common.allRecipes'),

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { match } from '@formatjs/intl-localematcher';
 import Negotiator from 'negotiator';
+import { pathMappings } from './utils/route-mappings-data';
 
 // Define supported locales and default locale
 export const locales = ['en', 'fr', 'es', 'de'] as const;
@@ -51,6 +52,43 @@ export function middleware(request: NextRequest) {
     
     // Redirect to the new URL with the locale
     return NextResponse.redirect(newUrl);
+  }
+  
+  // Handle localized path segments (e.g., /fr/recettes -> /fr/recipes)
+  const segments = pathname.split('/').filter(Boolean);
+  if (segments.length >= 2) {
+    const locale = segments[0] as Locale;
+    const localizedSegment = segments[1];
+    
+    // Skip handling for the root locale path (e.g., /fr)
+    if (segments.length === 1) {
+      return;
+    }
+    
+    // Check if this localized segment has a mapping for this locale
+    const mapping = pathMappings[locale];
+    const internalSegment = mapping[localizedSegment];
+    
+    // If we have a mapping and the localized segment is different from the internal segment
+    if (internalSegment && localizedSegment !== internalSegment) {
+      // Build the internal path URL (keeping the rest of the path intact)
+      const internalPath = [
+        '', // For leading slash
+        locale,
+        internalSegment,
+        ...segments.slice(2) // Include all subsequent segments (e.g., /fr/recettes/pasta -> /fr/recipes/pasta)
+      ].join('/');
+      
+      const newUrl = new URL(internalPath, request.url);
+      
+      // Preserve query parameters
+      request.nextUrl.searchParams.forEach((value, key) => {
+        newUrl.searchParams.set(key, value);
+      });
+      
+      // Use rewrite instead of redirect to maintain the original URL in the browser
+      return NextResponse.rewrite(newUrl);
+    }
   }
 }
 

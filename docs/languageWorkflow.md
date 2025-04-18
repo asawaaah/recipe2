@@ -149,6 +149,7 @@ function MyNavigation() {
     <nav>
       <LocalizedLink href="/recipes">All Recipes</LocalizedLink>
       {/* Will render as /en/recipes if current language is English */}
+      {/* Will render as /fr/recettes if current language is French */}
     </nav>
   )
 }
@@ -158,21 +159,118 @@ The `LocalizedLink` component automatically:
 1. Preserves the current language when navigating
 2. Handles external URLs correctly
 3. Supports custom language overrides
+4. **Localizes path segments** based on the current language
+
+### Localized URL Paths
+
+Our application supports localized URL paths, meaning that not only the content is translated but also the URL segments themselves. For example:
+
+| Language | URL Path |
+|----------|----------|
+| English  | `/en/recipes/pasta` |
+| French   | `/fr/recettes/pasta` |
+| Spanish  | `/es/recetas/pasta` |
+| German   | `/de/rezepte/pasta` |
+
+This approach provides several benefits:
+- Improved SEO for each language
+- Better user experience with URLs in the user's language
+- Clearer analytics and tracking by language
+
+#### How Localized Paths Work
+
+The system uses three main components:
+
+1. **Path Mappings**: Defined in `src/utils/route-mappings-data.ts`, these map localized path segments to internal route segments
+2. **Middleware URL Rewriting**: The Next.js middleware intercepts requests with localized paths and rewrites them internally to the standard route structure
+3. **LocalizedLink Component**: Generates the appropriate localized URLs when navigating
+
+For developers, this means:
+- The folder structure remains simple (e.g., `/src/app/[lang]/recipes/`)
+- Components reference routes using internal segment names (e.g., `"/recipes"`)
+- The LocalizedLink component handles the conversion to localized paths automatically
+
+#### Localized SEO and Canonical URLs
+
+For optimal SEO, our application also generates localized canonical URLs using the same path mapping system:
+
+```tsx
+// In page metadata
+return {
+  title: t('page.title'),
+  description: t('page.description'),
+  alternates: {
+    languages: alternateLanguages,
+    canonical: getLocalizedCanonical('/recipes', lang),
+  },
+  // ...
+}
+```
+
+The `getLocalizedCanonical` function:
+1. Takes an internal route (e.g., `/recipes` or `/recipes/[handle]`)
+2. Replaces any dynamic parameters (e.g., `[handle]` → `pasta-carbonara`)
+3. Localizes the path segments based on the target language
+4. Returns a fully-formed, SEO-friendly URL (e.g., `/fr/recettes/pasta-carbonara`)
+
+This ensures that:
+- Search engines index the correct localized URLs
+- Prevents duplicate content issues across languages
+- Maintains a canonical reference when content is available in multiple languages
+
+#### Handling Canonical URLs for Detail Pages
+
+For detail pages that might have translations with different handles/slugs:
+
+```tsx
+canonical: isDefaultLanguage || hasTranslation 
+  ? getLocalizedCanonical('/recipes/[handle]', lang, { handle }) 
+  : getLocalizedCanonical('/recipes/[handle]', 'en', { handle: recipe.handle }),
+```
+
+This pattern ensures that:
+1. If a translation exists in the current language, use that as canonical
+2. Otherwise, point to the original language version as canonical
+
+#### Working with Dynamic Parameters
+
+When using dynamic routes, pass the parameters as props to LocalizedLink:
+
+```tsx
+<LocalizedLink 
+  href="/recipes/[handle]" 
+  handle="pasta-carbonara"
+>
+  Pasta Carbonara
+</LocalizedLink>
+
+// Will render as:
+// - /en/recipes/pasta-carbonara (English)
+// - /fr/recettes/pasta-carbonara (French)
+```
+
+The same pattern applies for generating canonical URLs with dynamic parameters:
+
+```tsx
+getLocalizedCanonical('/recipes/[handle]', lang, { handle: 'pasta-carbonara' })
+// Returns '/fr/recettes/pasta-carbonara' when lang is 'fr'
+```
 
 ### Implementation Details
 
 The `LocalizedLink` component:
 1. Extracts the current language from the URL path first
 2. Falls back to the language context if needed
-3. Prefixes the language to the provided URL (e.g., `/recipes` becomes `/en/recipes`)
-4. Skips modification for external URLs (starting with `http://` or `https://`)
+3. Localizes the URL segments based on the language mappings
+4. Adds route parameters to the URL path
+5. Skips modification for external URLs (starting with `http://` or `https://`)
 
 ### ❌ NEVER USE
 
 Never use the regular Next.js `Link` component for internal links:
 - ~~`import Link from 'next/link'`~~
 
-This would break the language prefix and lose the user's language preference.
+This would break both the language prefix and localized path segments.
 
 ## Best Practices
 
@@ -618,6 +716,298 @@ We've replaced all instances of regular `Link` components with `LocalizedLink` t
 - Breadcrumbs
 - Buttons
 
+### 6. Add Child Routes (Optional)
+
+If your account section has sub-routes, create them using the same pattern:
+
+```
+src/app/[lang]/my-account/settings/page.tsx
+src/app/[lang]/my-account/profile/page.tsx
+```
+
+When linking to these sub-routes, use the full path:
+
+```tsx
+<LocalizedLink href="/my-account/settings">
+  {t('account.settings')}
+</LocalizedLink>
+
+// Will render as:
+// - /en/my-account/settings (English)
+// - /fr/mon-compte/settings (French)
+// (Only the first segment gets localized)
+```
+
+#### 6a. Localizing Child Routes (Advanced)
+
+If you want to localize child routes too (e.g., `/fr/mon-compte/parametres` instead of `/fr/mon-compte/settings`), you need to extend the path mappings:
+
+1. **Define Nested Route Segments**:
+
+   ```typescript
+   // In src/utils/route-mappings-data.ts
+   export type RouteSegment = 'recipes' | 'login' | 'signup' | 'my-account' | /* other routes */;
+   export type ChildRouteSegment = 'settings' | 'profile' | /* other child routes */;
+   ```
+
+2. **Create a Nested Mapping Structure**:
+
+   ```typescript
+   // Add child route mappings in src/utils/route-mappings-data.ts
+   
+   // Main route mappings (as before)
+   export const pathMappings: Record<Locale, Partial<Record<string, RouteSegment>>> = {
+     // ... existing mappings
+   };
+   
+   // Child route mappings (new)
+   export const childPathMappings: Record<
+     RouteSegment, // Parent route
+     Record<Locale, Partial<Record<string, ChildRouteSegment>>>
+   > = {
+     'my-account': {
+       en: {
+         'settings': 'settings',
+         'profile': 'profile',
+       },
+       fr: {
+         'parametres': 'settings',
+         'profil': 'profile',
+       },
+       es: {
+         'ajustes': 'settings',
+         'perfil': 'profile',
+       },
+       de: {
+         'einstellungen': 'settings',
+         'profil': 'profile',
+       }
+     },
+     // Add other parent routes as needed
+   };
+   ```
+
+3. **Add Helper Functions for Child Routes**:
+
+   ```typescript
+   // In src/utils/route-mappings-data.ts
+   
+   // Get the localized child segment
+   export function getLocalizedChildPathSegment(
+     locale: Locale,
+     parentSegment: RouteSegment,
+     childSegment: ChildRouteSegment
+   ): string {
+     // Find the parent in child mappings
+     const parentMapping = childPathMappings[parentSegment];
+     if (!parentMapping) return childSegment;
+     
+     // Find the child mapping for this locale
+     const localeMapping = parentMapping[locale];
+     if (!localeMapping) return childSegment;
+     
+     // Find the localized child segment
+     const localizedSegment = Object.entries(localeMapping).find(
+       ([_, value]) => value === childSegment
+     )?.[0];
+     
+     return localizedSegment || childSegment;
+   }
+   
+   // Get the internal child segment from a localized one
+   export function getInternalChildPathSegment(
+     locale: Locale,
+     parentSegment: RouteSegment,
+     localizedChildSegment: string
+   ): ChildRouteSegment | undefined {
+     const parentMapping = childPathMappings[parentSegment];
+     if (!parentMapping) return undefined;
+     
+     const localeMapping = parentMapping[locale];
+     if (!localeMapping) return undefined;
+     
+     return localeMapping[localizedChildSegment] as ChildRouteSegment | undefined;
+   }
+   ```
+
+4. **Modify the Localized-Routes Utility**:
+
+   ```typescript
+   // In src/utils/localized-routes.ts
+   
+   export function getLocalizedRoute(internalPath: string, locale: Locale): string {
+     // ... existing code for handling the first segment ...
+     
+     // Check if this is a nested path (has more than one segment)
+     if (segments.length > 1) {
+       const firstSegment = segments[0] as RouteSegment;
+       const secondSegment = segments[1] as ChildRouteSegment;
+       
+       // If both segments are valid route segments, localize both
+       if (firstSegment && secondSegment) {
+         // Replace first segment with its localized equivalent (as before)
+         const localizedFirstSegment = getLocalizedPathSegment(locale, firstSegment);
+         segments[0] = localizedFirstSegment;
+         
+         // Also replace the second segment if it's a known child route
+         const localizedSecondSegment = getLocalizedChildPathSegment(
+           locale, 
+           firstSegment, 
+           secondSegment
+         );
+         segments[1] = localizedSecondSegment;
+       }
+     }
+     
+     // ... rest of the function ...
+   }
+   ```
+
+5. **Update the Middleware**:
+
+   ```typescript
+   // In src/middleware.ts
+   
+   export function middleware(request: NextRequest) {
+     // ... existing code ...
+     
+     // Handle localized path segments
+     const segments = pathname.split('/').filter(Boolean);
+     if (segments.length >= 2) {
+       const locale = segments[0] as Locale;
+       const localizedSegment = segments[1];
+       
+       // ... existing code for first segment ...
+       
+       // Also handle second segment if present
+       if (segments.length >= 3 && internalSegment) {
+         const localizedChildSegment = segments[2];
+         const internalChildSegment = getInternalChildPathSegment(
+           locale,
+           internalSegment,
+           localizedChildSegment
+         );
+         
+         // If we have a mapping for the child segment
+         if (internalChildSegment && localizedChildSegment !== internalChildSegment) {
+           // Build the internal path with both segments rewritten
+           const internalPath = [
+             '',
+             locale,
+             internalSegment,
+             internalChildSegment,
+             ...segments.slice(3)
+           ].join('/');
+           
+           const newUrl = new URL(internalPath, request.url);
+           
+           // Preserve query parameters
+           request.nextUrl.searchParams.forEach((value, key) => {
+             newUrl.searchParams.set(key, value);
+           });
+           
+           // Rewrite the URL internally
+           return NextResponse.rewrite(newUrl);
+         }
+       }
+     }
+     
+     // ... rest of the function ...
+   }
+   ```
+
+6. **Update LocalizedLink for Child Routes**:
+
+   ```typescript
+   // In src/components/i18n/LocalizedLink.tsx
+   
+   export function LocalizedLink({ href, locale, ...props }: LocalizedLinkProps) {
+     // ... existing code ...
+     
+     // When building the localized URL, check for nested routes
+     const segments = pathWithParams.split('/').filter(Boolean);
+     
+     if (segments.length >= 2) {
+       const firstSegment = segments[0] as RouteSegment;
+       const secondSegment = segments[1] as ChildRouteSegment;
+       
+       // If both valid, localize both
+       if (firstSegment && secondSegment) {
+         // First segment (as before)
+         segments[0] = getLocalizedPathSegment(language, firstSegment);
+         
+         // Also localize second segment
+         segments[1] = getLocalizedChildPathSegment(language, firstSegment, secondSegment);
+       }
+     }
+     
+     // Reconstruct path with localized segments
+     const localizedPath = segments.join('/');
+     
+     // Prefix with language
+     const localizedHref = `/${language}/${localizedPath}`;
+     
+     // ... rest of the function ...
+   }
+   ```
+
+7. **Usage Example**:
+
+   ```tsx
+   <LocalizedLink href="/my-account/settings">
+     {t('account.settings')}
+   </LocalizedLink>
+   
+   // Will render as:
+   // - /en/my-account/settings (English)
+   // - /fr/mon-compte/parametres (French) - both segments localized
+   // - /es/mi-cuenta/ajustes (Spanish) - both segments localized
+   // - /de/mein-konto/einstellungen (German) - both segments localized
+   ```
+
+This implementation extends the localization system to support nested paths while maintaining backward compatibility with the existing single-segment approach. It adds more complexity but provides fully localized URLs for better SEO and user experience.
+
+Note that for deeply nested paths (3+ levels), you would need to extend this pattern further, but this is rarely needed for most applications.
+
+#### 7. Testing Your New Route
+
+After implementation, test the following:
+
+1. **Direct URL Access**: Try accessing the URLs directly in different languages:
+   - `/en/my-account`
+   - `/fr/mon-compte`
+   - `/es/mi-cuenta`
+   - `/de/mein-konto`
+
+2. **Navigation**: Test that clicking links in the UI correctly navigates to the localized URL.
+
+3. **Language Switching**: While on the account page, use the language switcher to verify that it correctly preserves the current route in the new language.
+
+4. **SEO Metadata**: Use browser developer tools to verify that:
+   - The `<title>` element is correctly translated
+   - Canonical links use the localized URL
+   - `hreflang` alternates link to correctly localized versions
+
+5. **Middleware Rewriting**: To verify middleware rewriting works, check your server logs to confirm that:
+   - `/fr/mon-compte` is internally rewritten to `/fr/my-account`
+   - Page content renders correctly regardless of which URL is accessed
+
+#### 8. Troubleshooting Common Issues
+
+If your localized route doesn't work as expected, check:
+
+1. **Type Definition**: Ensure `my-account` is correctly added to the `RouteSegment` type.
+
+2. **Mapping Consistency**: Verify that all language mappings use the exact same internal segment name.
+
+3. **Case Sensitivity**: URL paths are case-sensitive; ensure consistent casing across mappings.
+
+4. **Middleware Errors**: Check console logs for any middleware errors related to routing.
+
+5. **Component Usage**: Confirm you're using `LocalizedLink` instead of the default `Link` component.
+
+By following these steps, you'll ensure that your new route is properly localized, accessible via translated URLs, and optimized for SEO in all supported languages.
+
 ## Key Files Reference
 
 This section provides a reference to all essential files involved in the internationalization system of our application. Understanding these files and their roles will help you contribute to and maintain the multilingual aspects of the project.
@@ -640,6 +1030,497 @@ This section provides a reference to all essential files involved in the interna
 | `src/components/i18n/LanguageSwitcher.tsx` | UI component for switching languages. Uses the URL path to determine the current language. |
 | `src/components/i18n/withLocale.tsx` | Higher-order component (HOC) for providing translations to server components. |
 | `src/hooks/useTranslation.ts` | ❌ **Deprecated**. Legacy translation hook that should not be used. |
+
+### Localized URL Paths & SEO
+
+| File Path | Description |
+|-----------|-------------|
+| `src/utils/route-mappings-data.ts` | Central source of truth for path mappings between internal routes and localized paths for each language. |
+| `src/utils/localized-routes.ts` | Contains utility functions for generating localized routes and canonical URLs for SEO. |
+| `src/middleware.ts` | Handles URL rewriting to map localized paths to internal route structure. |
+
+### Adding or Modifying Route Mappings
+
+To add a new localized path or modify an existing one:
+
+1. Update the `RouteSegment` type in `src/utils/route-mappings-data.ts` if adding a new internal route:
+   ```typescript
+   export type RouteSegment = 'recipes' | 'login' | /* Add new route here */;
+   ```
+
+2. Add the localized path mapping for each language:
+   ```typescript
+   export const pathMappings: Record<Locale, Partial<Record<string, RouteSegment>>> = {
+     en: {
+       // English
+       'new-route': 'new-route',
+       // ...
+     },
+     fr: {
+       // French
+       'nouveau-route': 'new-route',
+       // ...
+     },
+     // Other languages...
+   }
+   ```
+
+3. Use the `LocalizedLink` component with the internal route name:
+   ```tsx
+   <LocalizedLink href="/new-route">Link Text</LocalizedLink>
+   ```
+
+4. When generating metadata, use the `getLocalizedCanonical` function:
+   ```tsx
+   canonical: getLocalizedCanonical('/new-route', lang),
+   ```
+
+### Step-by-Step: Adding a New Localized Path
+
+Let's walk through a complete example of adding a new `/my-account/` path to our application with proper localization:
+
+#### 1. Update the RouteSegment Type
+
+First, modify the `RouteSegment` type definition in `src/utils/route-mappings-data.ts`:
+
+```typescript
+// Before
+export type RouteSegment = 'recipes' | 'login' | 'signup' | 'my-cookbook' | 'all-recipes';
+
+// After
+export type RouteSegment = 'recipes' | 'login' | 'signup' | 'my-cookbook' | 'all-recipes' | 'my-account';
+```
+
+#### 2. Add Path Mappings for All Languages
+
+Add the new route segment with appropriate translations for each supported language:
+
+```typescript
+export const pathMappings: Record<Locale, Partial<Record<string, RouteSegment>>> = {
+  en: {
+    // Existing mappings...
+    'my-account': 'my-account',
+  },
+  fr: {
+    // Existing mappings...
+    'mon-compte': 'my-account',
+  },
+  es: {
+    // Existing mappings...
+    'mi-cuenta': 'my-account',
+  },
+  de: {
+    // Existing mappings...
+    'mein-konto': 'my-account',
+  }
+}
+```
+
+#### 3. Create the Page Component
+
+Create a new page component using the internal route name (not the localized version):
+
+```
+src/app/[lang]/my-account/page.tsx
+```
+
+```typescript
+// src/app/[lang]/my-account/page.tsx
+import { Metadata } from "next"
+import { Locale, locales } from "@/middleware"
+import { getTranslations } from "@/utils/server-dictionary"
+import { getLocalizedCanonical } from "@/utils/localized-routes"
+import { withLocale } from "@/components/i18n/withLocale"
+
+interface MyAccountPageProps {
+  params: { 
+    lang: Locale 
+  }
+}
+
+export async function generateMetadata({ params }: MyAccountPageProps): Promise<Metadata> {
+  const { lang } = await params
+  const t = await getTranslations(lang)
+  
+  // Generate alternate URLs for each language
+  const alternateLanguages: Record<string, string> = {}
+  locales.forEach(locale => {
+    alternateLanguages[locale] = getLocalizedCanonical('/my-account', locale)
+  })
+  
+  return {
+    title: t('account.title'),
+    description: t('account.description'),
+    alternates: {
+      languages: alternateLanguages,
+      canonical: getLocalizedCanonical('/my-account', lang),
+    },
+    openGraph: {
+      title: t('account.title'),
+      description: t('account.description'),
+      locale: lang,
+      type: 'website',
+    },
+  }
+}
+
+export default withLocale<{ params: { lang: Locale } }>(async ({ t, params }) => {
+  return (
+    <div>
+      <h1>{t('account.title')}</h1>
+      <p>{t('account.description')}</p>
+      {/* Rest of your account page content */}
+    </div>
+  )
+})
+```
+
+#### 4. Add Navigation Links
+
+Update your navigation components to include links to the new route:
+
+```tsx
+// In your navigation component
+import { LocalizedLink } from "@/components/i18n/LocalizedLink"
+import { useTranslation } from "@/components/i18n/TranslationContext"
+
+export function Navigation() {
+  const { t } = useTranslation()
+  
+  return (
+    <nav>
+      {/* Existing links... */}
+      <LocalizedLink href="/my-account">
+        {t('navigation.myAccount')}
+      </LocalizedLink>
+    </nav>
+  )
+}
+```
+
+#### 5. Add the Required Translations
+
+Update your dictionary files with the new translation keys:
+
+```json
+// dictionaries/en.json
+{
+  "account": {
+    "title": "My Account",
+    "description": "Manage your account settings and preferences"
+  },
+  "navigation": {
+    "myAccount": "My Account"
+  }
+  // Existing translations...
+}
+
+// dictionaries/fr.json
+{
+  "account": {
+    "title": "Mon Compte",
+    "description": "Gérez vos paramètres et préférences de compte"
+  },
+  "navigation": {
+    "myAccount": "Mon Compte"
+  }
+  // Existing translations...
+}
+
+// Similar updates for es.json and de.json
+```
+
+#### 6. Add Child Routes (Optional)
+
+If your account section has sub-routes, create them using the same pattern:
+
+```
+src/app/[lang]/my-account/settings/page.tsx
+src/app/[lang]/my-account/profile/page.tsx
+```
+
+When linking to these sub-routes, use the full path:
+
+```tsx
+<LocalizedLink href="/my-account/settings">
+  {t('account.settings')}
+</LocalizedLink>
+
+// Will render as:
+// - /en/my-account/settings (English)
+// - /fr/mon-compte/settings (French)
+// (Only the first segment gets localized)
+```
+
+#### 6a. Localizing Child Routes (Advanced)
+
+If you want to localize child routes too (e.g., `/fr/mon-compte/parametres` instead of `/fr/mon-compte/settings`), you need to extend the path mappings:
+
+1. **Define Nested Route Segments**:
+
+   ```typescript
+   // In src/utils/route-mappings-data.ts
+   export type RouteSegment = 'recipes' | 'login' | 'signup' | 'my-account' | /* other routes */;
+   export type ChildRouteSegment = 'settings' | 'profile' | /* other child routes */;
+   ```
+
+2. **Create a Nested Mapping Structure**:
+
+   ```typescript
+   // Add child route mappings in src/utils/route-mappings-data.ts
+   
+   // Main route mappings (as before)
+   export const pathMappings: Record<Locale, Partial<Record<string, RouteSegment>>> = {
+     // ... existing mappings
+   };
+   
+   // Child route mappings (new)
+   export const childPathMappings: Record<
+     RouteSegment, // Parent route
+     Record<Locale, Partial<Record<string, ChildRouteSegment>>>
+   > = {
+     'my-account': {
+       en: {
+         'settings': 'settings',
+         'profile': 'profile',
+       },
+       fr: {
+         'parametres': 'settings',
+         'profil': 'profile',
+       },
+       es: {
+         'ajustes': 'settings',
+         'perfil': 'profile',
+       },
+       de: {
+         'einstellungen': 'settings',
+         'profil': 'profile',
+       }
+     },
+     // Add other parent routes as needed
+   };
+   ```
+
+3. **Add Helper Functions for Child Routes**:
+
+   ```typescript
+   // In src/utils/route-mappings-data.ts
+   
+   // Get the localized child segment
+   export function getLocalizedChildPathSegment(
+     locale: Locale,
+     parentSegment: RouteSegment,
+     childSegment: ChildRouteSegment
+   ): string {
+     // Find the parent in child mappings
+     const parentMapping = childPathMappings[parentSegment];
+     if (!parentMapping) return childSegment;
+     
+     // Find the child mapping for this locale
+     const localeMapping = parentMapping[locale];
+     if (!localeMapping) return childSegment;
+     
+     // Find the localized child segment
+     const localizedSegment = Object.entries(localeMapping).find(
+       ([_, value]) => value === childSegment
+     )?.[0];
+     
+     return localizedSegment || childSegment;
+   }
+   
+   // Get the internal child segment from a localized one
+   export function getInternalChildPathSegment(
+     locale: Locale,
+     parentSegment: RouteSegment,
+     localizedChildSegment: string
+   ): ChildRouteSegment | undefined {
+     const parentMapping = childPathMappings[parentSegment];
+     if (!parentMapping) return undefined;
+     
+     const localeMapping = parentMapping[locale];
+     if (!localeMapping) return undefined;
+     
+     return localeMapping[localizedChildSegment] as ChildRouteSegment | undefined;
+   }
+   ```
+
+4. **Modify the Localized-Routes Utility**:
+
+   ```typescript
+   // In src/utils/localized-routes.ts
+   
+   export function getLocalizedRoute(internalPath: string, locale: Locale): string {
+     // ... existing code for handling the first segment ...
+     
+     // Check if this is a nested path (has more than one segment)
+     if (segments.length > 1) {
+       const firstSegment = segments[0] as RouteSegment;
+       const secondSegment = segments[1] as ChildRouteSegment;
+       
+       // If both segments are valid route segments, localize both
+       if (firstSegment && secondSegment) {
+         // Replace first segment with its localized equivalent (as before)
+         const localizedFirstSegment = getLocalizedPathSegment(locale, firstSegment);
+         segments[0] = localizedFirstSegment;
+         
+         // Also replace the second segment if it's a known child route
+         const localizedSecondSegment = getLocalizedChildPathSegment(
+           locale, 
+           firstSegment, 
+           secondSegment
+         );
+         segments[1] = localizedSecondSegment;
+       }
+     }
+     
+     // ... rest of the function ...
+   }
+   ```
+
+5. **Update the Middleware**:
+
+   ```typescript
+   // In src/middleware.ts
+   
+   export function middleware(request: NextRequest) {
+     // ... existing code ...
+     
+     // Handle localized path segments
+     const segments = pathname.split('/').filter(Boolean);
+     if (segments.length >= 2) {
+       const locale = segments[0] as Locale;
+       const localizedSegment = segments[1];
+       
+       // ... existing code for first segment ...
+       
+       // Also handle second segment if present
+       if (segments.length >= 3 && internalSegment) {
+         const localizedChildSegment = segments[2];
+         const internalChildSegment = getInternalChildPathSegment(
+           locale,
+           internalSegment,
+           localizedChildSegment
+         );
+         
+         // If we have a mapping for the child segment
+         if (internalChildSegment && localizedChildSegment !== internalChildSegment) {
+           // Build the internal path with both segments rewritten
+           const internalPath = [
+             '',
+             locale,
+             internalSegment,
+             internalChildSegment,
+             ...segments.slice(3)
+           ].join('/');
+           
+           const newUrl = new URL(internalPath, request.url);
+           
+           // Preserve query parameters
+           request.nextUrl.searchParams.forEach((value, key) => {
+             newUrl.searchParams.set(key, value);
+           });
+           
+           // Rewrite the URL internally
+           return NextResponse.rewrite(newUrl);
+         }
+       }
+     }
+     
+     // ... rest of the function ...
+   }
+   ```
+
+6. **Update LocalizedLink for Child Routes**:
+
+   ```typescript
+   // In src/components/i18n/LocalizedLink.tsx
+   
+   export function LocalizedLink({ href, locale, ...props }: LocalizedLinkProps) {
+     // ... existing code ...
+     
+     // When building the localized URL, check for nested routes
+     const segments = pathWithParams.split('/').filter(Boolean);
+     
+     if (segments.length >= 2) {
+       const firstSegment = segments[0] as RouteSegment;
+       const secondSegment = segments[1] as ChildRouteSegment;
+       
+       // If both valid, localize both
+       if (firstSegment && secondSegment) {
+         // First segment (as before)
+         segments[0] = getLocalizedPathSegment(language, firstSegment);
+         
+         // Also localize second segment
+         segments[1] = getLocalizedChildPathSegment(language, firstSegment, secondSegment);
+       }
+     }
+     
+     // Reconstruct path with localized segments
+     const localizedPath = segments.join('/');
+     
+     // Prefix with language
+     const localizedHref = `/${language}/${localizedPath}`;
+     
+     // ... rest of the function ...
+   }
+   ```
+
+7. **Usage Example**:
+
+   ```tsx
+   <LocalizedLink href="/my-account/settings">
+     {t('account.settings')}
+   </LocalizedLink>
+   
+   // Will render as:
+   // - /en/my-account/settings (English)
+   // - /fr/mon-compte/parametres (French) - both segments localized
+   // - /es/mi-cuenta/ajustes (Spanish) - both segments localized
+   // - /de/mein-konto/einstellungen (German) - both segments localized
+   ```
+
+This implementation extends the localization system to support nested paths while maintaining backward compatibility with the existing single-segment approach. It adds more complexity but provides fully localized URLs for better SEO and user experience.
+
+Note that for deeply nested paths (3+ levels), you would need to extend this pattern further, but this is rarely needed for most applications.
+
+#### 7. Testing Your New Route
+
+After implementation, test the following:
+
+1. **Direct URL Access**: Try accessing the URLs directly in different languages:
+   - `/en/my-account`
+   - `/fr/mon-compte`
+   - `/es/mi-cuenta`
+   - `/de/mein-konto`
+
+2. **Navigation**: Test that clicking links in the UI correctly navigates to the localized URL.
+
+3. **Language Switching**: While on the account page, use the language switcher to verify that it correctly preserves the current route in the new language.
+
+4. **SEO Metadata**: Use browser developer tools to verify that:
+   - The `<title>` element is correctly translated
+   - Canonical links use the localized URL
+   - `hreflang` alternates link to correctly localized versions
+
+5. **Middleware Rewriting**: To verify middleware rewriting works, check your server logs to confirm that:
+   - `/fr/mon-compte` is internally rewritten to `/fr/my-account`
+   - Page content renders correctly regardless of which URL is accessed
+
+#### 8. Troubleshooting Common Issues
+
+If your localized route doesn't work as expected, check:
+
+1. **Type Definition**: Ensure `my-account` is correctly added to the `RouteSegment` type.
+
+2. **Mapping Consistency**: Verify that all language mappings use the exact same internal segment name.
+
+3. **Case Sensitivity**: URL paths are case-sensitive; ensure consistent casing across mappings.
+
+4. **Middleware Errors**: Check console logs for any middleware errors related to routing.
+
+5. **Component Usage**: Confirm you're using `LocalizedLink` instead of the default `Link` component.
+
+By following these steps, you'll ensure that your new route is properly localized, accessible via translated URLs, and optimized for SEO in all supported languages.
 
 ### Translation Dictionaries
 

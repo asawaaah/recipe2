@@ -6,6 +6,7 @@ import { getTranslations } from "@/utils/server-dictionary"
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher"
 import { LocalizedLink } from "@/components/i18n/LocalizedLink"
 import { withLocale } from "@/components/i18n/withLocale"
+import { getLocalizedCanonical } from "@/utils/localized-routes"
 
 interface HomePageProps {
   params: {

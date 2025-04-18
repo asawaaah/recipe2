@@ -5,6 +5,7 @@ import { SidebarLayout } from '@/components/layouts/SidebarLayout'
 import RecipeDetailView from '@/components/blocks/RecipeDetailView'
 import { Locale, locales } from '@/middleware'
 import { Recipe as RecipeType } from '@/services/recipes/types'
+import { getLocalizedCanonical } from '@/utils/localized-routes'
 
 interface RecipePageProps {
   params: {
@@ -36,7 +37,7 @@ export async function generateMetadata({ params }: RecipePageProps): Promise<Met
     
     // Use translation handle if available, otherwise use default handle
     const localizedHandle = translation?.handle || recipe.handle
-    alternateLanguages[locale] = `/${locale}/recipes/${localizedHandle}`
+    alternateLanguages[locale] = getLocalizedCanonical('/recipes/[handle]', locale, { handle: localizedHandle })
   })
 
   // Find if there's a translation for the requested language
@@ -53,8 +54,8 @@ export async function generateMetadata({ params }: RecipePageProps): Promise<Met
     alternates: {
       languages: alternateLanguages,
       canonical: isDefaultLanguage || hasTranslation 
-        ? `/${lang}/recipes/${handle}` 
-        : `/en/recipes/${recipe.handle}`,
+        ? getLocalizedCanonical('/recipes/[handle]', lang, { handle }) 
+        : getLocalizedCanonical('/recipes/[handle]', 'en', { handle: recipe.handle }),
     },
     openGraph: {
       title: recipe.title,
@@ -74,7 +75,7 @@ export default async function RecipePage({ params }: RecipePageProps) {
     <SidebarLayout
       breadcrumbs={[
         { label: 'Home', href: `/${lang}` },
-        { label: 'Recipes', href: `/${lang}/recipes` },
+        { label: 'Recipes', href: getLocalizedCanonical('/recipes', lang) },
         { label: 'Details', isCurrentPage: true }
       ]}
     >
