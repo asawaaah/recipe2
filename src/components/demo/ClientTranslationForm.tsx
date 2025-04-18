@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useTranslation } from '@/components/i18n/TranslationContext';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Loader2 } from "lucide-react";
 
 export function ClientTranslationForm() {
-  const { t, isLoading, lang } = useTranslation();
+  const { t, locale: lang } = useTranslation();
   const [formState, setFormState] = useState({
     title: '',
     description: '',
@@ -20,6 +20,7 @@ export function ClientTranslationForm() {
   });
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   
   // Handle form input changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {

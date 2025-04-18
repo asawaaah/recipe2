@@ -2,8 +2,9 @@ import { Clock, Users } from "lucide-react"
 import Image from "next/image"
 import { cn } from "@/lib/utils"
 import { LocalizedLink } from "@/components/i18n/LocalizedLink"
-import { useLang } from "@/app/providers"
-import { useTranslation } from "@/hooks/useTranslation"
+import { useTranslation } from "@/components/i18n/TranslationContext"
+import { usePathname } from "next/navigation"
+import { locales, Locale, defaultLocale } from "@/middleware"
 
 import {
   Card,
@@ -41,7 +42,13 @@ export function RecipeCard({
   handle,
   translations = [],
 }: RecipeCardProps) {
-  const currentLang = useLang()
+  // Get current language from URL path using the same method as in other components
+  const pathname = usePathname()
+  const pathLang = pathname?.split('/')?.[1] as Locale
+  const isValidLocale = locales.includes(pathLang as Locale)
+  const currentLang = isValidLocale ? pathLang : defaultLocale
+  
+  // Use the standard translation hook
   const { t } = useTranslation()
   
   // Get the localized handle if available, otherwise use the default handle
@@ -61,6 +68,7 @@ export function RecipeCard({
                 src={imageUrl}
                 alt={title}
                 fill
+                priority
                 className="object-cover"
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               />

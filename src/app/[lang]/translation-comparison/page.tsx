@@ -14,7 +14,7 @@ function TranslationApproach1({ dict, lang }: { dict: any, lang: Locale }) {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="p-3 bg-muted rounded-md">
-          <p className="font-mono text-xs">getDictionary(params.lang)</p>
+          <p className="font-mono text-xs">await getDictionary((await params).lang)</p>
         </div>
         
         <div>
@@ -69,8 +69,11 @@ export default async function TranslationComparisonPage({
 }: { 
   params: { lang: Locale } 
 }) {
+  // Await params to access its properties
+  const { lang } = await params;
+  
   // Direct dictionary approach
-  const dict = await getDictionary(params.lang)
+  const dict = await getDictionary(lang)
   
   // For the withLocale approach, we'll render this separately
   // without trying to create a component from it
@@ -88,7 +91,7 @@ export default async function TranslationComparisonPage({
       </div>
       
       <div className="grid gap-8 md:grid-cols-2">
-        <TranslationApproach1 dict={dict} lang={params.lang} />
+        <TranslationApproach1 dict={dict} lang={lang} />
         
         {/* Approach 2 content rendered directly with withLocale */}
         {await withLocale<{ params: { lang: Locale } }>(

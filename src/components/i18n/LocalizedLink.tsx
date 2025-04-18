@@ -3,6 +3,8 @@
 import Link from 'next/link'
 import { useLang } from '@/app/providers'
 import { ComponentProps } from 'react'
+import { usePathname } from 'next/navigation'
+import { locales, Locale, defaultLocale } from '@/middleware'
 
 type LocalizedLinkProps = Omit<ComponentProps<typeof Link>, 'href'> & {
   href: string // The path without language prefix
@@ -19,8 +21,16 @@ type LocalizedLinkProps = Omit<ComponentProps<typeof Link>, 'href'> & {
  * ```
  */
 export function LocalizedLink({ href, locale, ...props }: LocalizedLinkProps) {
-  const currentLang = useLang()
-  const language = locale || currentLang
+  // Get current language from URL path
+  const pathname = usePathname()
+  const pathLang = pathname?.split('/')?.[1] as Locale
+  const isValidLocale = locales.includes(pathLang as Locale)
+  
+  // Get language from context as fallback
+  const contextLang = useLang()
+  
+  // Use the provided locale prop first, then path language if valid, otherwise context or default
+  const language = locale || (isValidLocale ? pathLang : (contextLang || defaultLocale))
   
   // Don't modify external URLs (those starting with http:// or https://)
   if (href.startsWith('http://') || href.startsWith('https://')) {

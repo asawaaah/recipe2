@@ -14,7 +14,10 @@ interface HomePageProps {
 }
 
 export async function generateMetadata({ params }: HomePageProps): Promise<Metadata> {
-  const t = await getTranslations(params.lang)
+  // Await params to access its properties
+  const { lang } = await params;
+  
+  const t = await getTranslations(lang)
   
   // Generate alternate URLs for each language
   const alternateLanguages: Record<string, string> = {}
@@ -27,12 +30,12 @@ export async function generateMetadata({ params }: HomePageProps): Promise<Metad
     description: t('common.welcomeMessage'),
     alternates: {
       languages: alternateLanguages,
-      canonical: `/${params.lang}`,
+      canonical: `/${lang}`,
     },
     openGraph: {
       title: t('common.welcome'),
       description: t('common.welcomeMessage'),
-      locale: params.lang,
+      locale: lang,
       type: 'website',
     },
   }

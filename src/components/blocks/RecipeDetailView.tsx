@@ -4,14 +4,14 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
 import { Clock, Users } from 'lucide-react'
-import Link from 'next/link'
+import { LocalizedLink } from '@/components/i18n/LocalizedLink'
 import RecipeDetails from '@/components/blocks/RecipeDetails'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { AlertTriangle, RefreshCcw } from 'lucide-react'
 import { useRecipeByHandle } from '@/state/hooks/useRecipes'
 import { Button } from '@/components/ui/button'
-import { useTranslation } from '@/hooks/useTranslation'
+import { useTranslation } from '@/components/i18n/TranslationContext'
 
 interface RecipeDetailViewProps {
   handle: string
@@ -83,13 +83,13 @@ export default function RecipeDetailView({ handle }: RecipeDetailViewProps) {
     return (
       <Alert variant="destructive" className="m-4">
         <AlertTriangle className="h-4 w-4" />
-        <AlertTitle>Error</AlertTitle>
+        <AlertTitle>{t('errors.general')}</AlertTitle>
         <AlertDescription className="space-y-4">
           {isPGRSTError ? (
             <>Recipe not found. The recipe with handle "{handle}" does not exist.</>
           ) : (
             <>
-              {errorMessage}. Please try again later.
+              {errorMessage}. {t('errors.loadingFailed')}
             </>
           )}
           <div className="pt-2">
@@ -100,7 +100,7 @@ export default function RecipeDetailView({ handle }: RecipeDetailViewProps) {
               onClick={handleRetry}
             >
               <RefreshCcw className="h-4 w-4" />
-              Retry
+              {t('common.retry')}
             </Button>
           </div>
         </AlertDescription>
@@ -115,7 +115,7 @@ export default function RecipeDetailView({ handle }: RecipeDetailViewProps) {
   
   const authorName = recipe.user?.username 
     ? `${recipe.user.username}`
-    : 'Unknown Chef'
+    : t('recipe.unknownChef')
   
   return (
     <div className="container py-10">
@@ -134,7 +134,7 @@ export default function RecipeDetailView({ handle }: RecipeDetailViewProps) {
           </Badge>
         )}
         <Badge variant="outline">
-          By <Link href={`/users/${recipe.user?.username || 'unknown'}`} className="hover:underline ml-1">{authorName}</Link>
+          {t('recipe.authoredBy')} <LocalizedLink href={`/users/${recipe.user?.username || 'unknown'}`} className="hover:underline ml-1">{authorName}</LocalizedLink>
         </Badge>
       </div>
       <RecipeDetails recipe={recipe} />

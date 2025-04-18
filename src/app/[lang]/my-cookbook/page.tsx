@@ -13,17 +13,21 @@ import { AlertTriangle } from "lucide-react"
 import { usePreferences } from "@/state/hooks/usePreferences"
 import Link from "next/link"
 import { RecipeTranslation } from "@/services/recipes/types"
+import { use } from "react"
 
 export default function MyCookbookPage({
   params
 }: {
-  params: { lang: string }
+  params: Promise<{ lang: string }>
 }) {
+  // Unwrap params using React.use since it's a Promise in Next.js 15.3+
+  const { lang } = use(params)
+  
   const { profile } = useUser()
   const { recipeViewMode: viewMode } = usePreferences()
   
-  // Get current language from context - this comes from params.lang
-  const locale = params.lang
+  // Get current language from context
+  const locale = lang
   
   // Pass the locale to the useUserRecipes hook
   const { data: recipes, isLoading, error } = useUserRecipes(profile?.id, { locale })
@@ -31,14 +35,14 @@ export default function MyCookbookPage({
   return (
     <SidebarLayout
       breadcrumbs={[
-        { label: "Home", href: `/${params.lang}` },
+        { label: "Home", href: `/${lang}` },
         { label: "My Cookbook", isCurrentPage: true }
       ]}
     >
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">My Cookbook</h1>
-          <Link href={`/${params.lang}/my-cookbook/create`}>
+          <Link href={`/${lang}/my-cookbook/create`}>
             <Button>
               <Plus className="mr-2 h-4 w-4" />
               Create Recipe
@@ -79,7 +83,7 @@ export default function MyCookbookPage({
               {recipes.map((recipe) => (
                 <div key={recipe.id} className="relative group">
                   <Link 
-                    href={`/${params.lang}/my-cookbook/edit/${recipe.id}`} 
+                    href={`/${lang}/my-cookbook/edit/${recipe.id}`} 
                     className="absolute top-2 right-2 z-10 bg-background/80 p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     <Edit className="h-4 w-4" />
@@ -106,7 +110,7 @@ export default function MyCookbookPage({
         ) : (
           <div className="text-center py-12 space-y-6">
             <p className="text-muted-foreground">You haven't created any recipes yet.</p>
-            <Link href={`/${params.lang}/my-cookbook/create`}>
+            <Link href={`/${lang}/my-cookbook/create`}>
               <Button>
                 <Plus className="mr-2 h-4 w-4" />
                 Create Your First Recipe

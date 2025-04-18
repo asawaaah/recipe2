@@ -1,36 +1,39 @@
-import Link from "next/link"
 import { ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { LocalizedLink } from "@/components/i18n/LocalizedLink"
+import { useTranslation } from "@/components/i18n/TranslationContext"
 
 export default function Home() {
+  const { t } = useTranslation()
+  
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-24">
       <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm">
         <h1 className="text-4xl font-bold text-center mb-8">
-          Welcome to Recipe App
+          {t('common.welcome')}
         </h1>
         <p className="text-center text-lg mb-8">
-          Share and discover amazing recipes from around the world
+          {t('common.welcomeMessage')}
         </p>
         
         <div className="flex justify-center gap-4 mt-8">
           <Button asChild size="lg">
-            <Link href="/example" className="flex items-center gap-2">
-              View UI Components
+            <LocalizedLink href="/example" className="flex items-center gap-2">
+              {t('homepage.viewComponents')}
               <ArrowRight className="h-4 w-4" />
-            </Link>
+            </LocalizedLink>
           </Button>
           <Button asChild size="lg" variant="secondary">
-            <Link href="/my-cookbook" className="flex items-center gap-2">
-              Cook Book with sidebar
+            <LocalizedLink href="/my-cookbook" className="flex items-center gap-2">
+              {t('homepage.cookbookWithSidebar')}
               <ArrowRight className="h-4 w-4" />
-            </Link>
+            </LocalizedLink>
           </Button>
           <Button asChild size="lg" variant="outline">
-            <Link href="/all-recipes" className="flex items-center gap-2">
-              All Recipes
+            <LocalizedLink href="/all-recipes" className="flex items-center gap-2">
+              {t('common.allRecipes')}
               <ArrowRight className="h-4 w-4" />
-            </Link>
+            </LocalizedLink>
           </Button>
         </div>
       </div>

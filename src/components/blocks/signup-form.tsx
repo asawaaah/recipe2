@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Eye, EyeOff } from 'lucide-react'
@@ -13,6 +13,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { SignUpInput, signUpSchema } from '@/lib/validators/auth'
 import { Separator } from '@/components/ui/separator'
 import { useAuthActions } from '@/state/hooks/useAuthActions'
+import { useTranslation } from '@/components/i18n/TranslationContext'
+import { LocalizedLink } from '@/components/i18n/LocalizedLink'
+import { Locale, locales, defaultLocale } from '@/middleware'
 
 type FormStep = 'email' | 'username' | 'password'
 
@@ -29,11 +32,18 @@ const slideAnimation = {
 
 export function SignUpForm({ lang }: SignUpFormProps) {
   const router = useRouter()
+  const pathname = usePathname()
+  const { t } = useTranslation()
   const { signUp, signInWithGoogle, isLoading, error } = useAuthActions()
   const [currentStep, setCurrentStep] = useState<FormStep>('email')
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
+  // Extract language from URL path or use provided lang or default
+  const pathLang = pathname?.split('/')?.[1] as Locale
+  const isValidLocale = locales.includes(pathLang as Locale)
+  const currentLang = lang || (isValidLocale ? pathLang : defaultLocale)
+  
   const {
     register,
     handleSubmit,
@@ -77,11 +87,13 @@ export function SignUpForm({ lang }: SignUpFormProps) {
     }
   }
 
+  const loginPath = currentLang ? `/${currentLang}/login` : '/login';
+
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle className="text-2xl">Create an account</CardTitle>
-        <CardDescription>Enter your details to get started</CardDescription>
+        <CardTitle className="text-2xl">{t('auth.signup.title')}</CardTitle>
+        <CardDescription>{t('auth.signup.subtitle')}</CardDescription>
         {error && (
           <p className="text-sm text-red-500 mt-2">{error}</p>
         )}
@@ -96,11 +108,11 @@ export function SignUpForm({ lang }: SignUpFormProps) {
                 className="space-y-4"
               >
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">{t('auth.signup.email')}</Label>
                   <Input
                     id="email"
                     type="email"
-                    placeholder="you@example.com"
+                    placeholder={t('auth.signup.emailPlaceholder')}
                     disabled={isLoading}
                     {...register('email')}
                   />
@@ -114,7 +126,7 @@ export function SignUpForm({ lang }: SignUpFormProps) {
                   disabled={isLoading || !email}
                   onClick={handleContinueWithEmail}
                 >
-                  Continue with email
+                  {t('auth.signup.continueWithEmail')}
                 </Button>
 
                 <div className="relative my-4">
@@ -122,7 +134,9 @@ export function SignUpForm({ lang }: SignUpFormProps) {
                     <Separator />
                   </div>
                   <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+                    <span className="bg-background px-2 text-muted-foreground">
+                      {t('auth.signup.orContinueWith')}
+                    </span>
                   </div>
                 </div>
 
@@ -139,7 +153,7 @@ export function SignUpForm({ lang }: SignUpFormProps) {
                       d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z"
                     />
                   </svg>
-                  Sign up with Google
+                  {t('auth.signup.signUpWithGoogle')}
                 </Button>
               </motion.div>
             )}
@@ -151,11 +165,11 @@ export function SignUpForm({ lang }: SignUpFormProps) {
                 className="space-y-4"
               >
                 <div className="space-y-2">
-                  <Label htmlFor="username">Choose a username</Label>
+                  <Label htmlFor="username">{t('auth.signup.chooseUsername')}</Label>
                   <Input
                     id="username"
                     type="text"
-                    placeholder="johndoe"
+                    placeholder={t('auth.signup.usernamePlaceholder')}
                     disabled={isLoading}
                     {...register('username')}
                   />
@@ -169,7 +183,7 @@ export function SignUpForm({ lang }: SignUpFormProps) {
                   disabled={isLoading || !username}
                   onClick={handleSetUsername}
                 >
-                  Set my username
+                  {t('auth.signup.setUsername')}
                 </Button>
                 <Button
                   type="button"
@@ -177,7 +191,7 @@ export function SignUpForm({ lang }: SignUpFormProps) {
                   className="w-full"
                   onClick={() => setCurrentStep('email')}
                 >
-                  Back
+                  {t('auth.common.back')}
                 </Button>
               </motion.div>
             )}
@@ -189,7 +203,7 @@ export function SignUpForm({ lang }: SignUpFormProps) {
                 className="space-y-4"
               >
                 <div className="space-y-2">
-                  <Label htmlFor="password">Create a password</Label>
+                  <Label htmlFor="password">{t('auth.signup.createPassword')}</Label>
                   <div className="relative">
                     <Input
                       id="password"
@@ -212,7 +226,7 @@ export function SignUpForm({ lang }: SignUpFormProps) {
                   )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirm password</Label>
+                  <Label htmlFor="confirmPassword">{t('auth.signup.confirmPassword')}</Label>
                   <div className="relative">
                     <Input
                       id="confirmPassword"
@@ -235,7 +249,7 @@ export function SignUpForm({ lang }: SignUpFormProps) {
                   )}
                 </div>
                 <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? 'Creating account...' : 'Create account'}
+                  {isLoading ? t('auth.signup.creatingAccount') : t('auth.signup.createAccount')}
                 </Button>
                 <Button
                   type="button"
@@ -243,7 +257,7 @@ export function SignUpForm({ lang }: SignUpFormProps) {
                   className="w-full"
                   onClick={() => setCurrentStep('username')}
                 >
-                  Back
+                  {t('auth.common.back')}
                 </Button>
               </motion.div>
             )}
@@ -252,13 +266,13 @@ export function SignUpForm({ lang }: SignUpFormProps) {
       </CardContent>
       <CardFooter className="flex justify-center">
         <p className="text-sm text-muted-foreground">
-          Already have an account?{" "}
+          {t('auth.signup.alreadyHaveAccount')}{" "}
           <Button 
             variant="link" 
             className="h-auto p-0 text-primary"
-            onClick={() => router.push('/login')}
+            onClick={() => router.push(loginPath)}
           >
-            Sign in
+            {t('auth.signup.signIn')}
           </Button>
         </p>
       </CardFooter>

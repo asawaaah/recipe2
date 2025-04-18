@@ -11,8 +11,11 @@ export default async function ServerTranslationDemoPage({
 }: { 
   params: { lang: Locale } 
 }) {
+  // Await params to access its properties
+  const { lang } = await params;
+  
   // Get the dictionary directly in the server component
-  const dict = await getDictionary(params.lang)
+  const dict = await getDictionary(lang)
   
   return (
     <div className="container py-10 space-y-8">
@@ -29,7 +32,7 @@ export default async function ServerTranslationDemoPage({
       
       <Card className="w-full max-w-xl mx-auto">
         <CardHeader>
-          <CardTitle>{dict.common.language}: {params.lang.toUpperCase()}</CardTitle>
+          <CardTitle>{dict.common.language}: {lang.toUpperCase()}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-2">

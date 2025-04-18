@@ -1,10 +1,11 @@
 import Image from 'next/image'
-import Link from 'next/link'
+import { LocalizedLink } from '@/components/i18n/LocalizedLink'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { AspectRatio } from '@/components/ui/aspect-ratio'
 import { Clock, Users, User } from 'lucide-react'
 import { Recipe } from '@/services/recipes/types'
+import { useTranslation } from '@/components/i18n/TranslationContext'
 
 interface RecipeDetailsProps {
   recipe: Recipe
@@ -12,6 +13,7 @@ interface RecipeDetailsProps {
 
 const RecipeDetails = ({ recipe }: RecipeDetailsProps) => {
   if (!recipe) return null
+  const { t } = useTranslation()
 
   return (
     <div className="container mx-auto py-8 px-4">
@@ -25,6 +27,7 @@ const RecipeDetails = ({ recipe }: RecipeDetailsProps) => {
                   src={recipe.image_url}
                   alt={recipe.title}
                   fill
+                  priority
                   className="rounded-lg object-cover"
                 />
               ) : (
@@ -36,24 +39,24 @@ const RecipeDetails = ({ recipe }: RecipeDetailsProps) => {
             {recipe.cooking_time && (
               <Badge variant="secondary" className="flex items-center gap-2">
                 <Clock className="h-4 w-4" />
-                {recipe.cooking_time} minutes
+                {recipe.cooking_time} {t('recipe.minutes')}
               </Badge>
             )}
             {recipe.servings && (
               <Badge variant="secondary" className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
-                {recipe.servings} servings
+                {recipe.servings} {t('recipe.servings')}
               </Badge>
             )}
             {recipe.user && (
               <Badge variant="secondary" className="flex items-center gap-2">
                 <User className="h-4 w-4" />
-                <Link 
+                <LocalizedLink 
                   href={`/users/${recipe.user.username}`}
                   className="hover:text-primary transition-colors"
                 >
                   {recipe.user.username}
-                </Link>
+                </LocalizedLink>
               </Badge>
             )}
           </div>
@@ -64,7 +67,7 @@ const RecipeDetails = ({ recipe }: RecipeDetailsProps) => {
         {/* Ingredients Section */}
         <Card>
           <CardHeader>
-            <h4 className="text-2xl font-semibold">Ingredients</h4>
+            <h4 className="text-2xl font-semibold">{t('recipe.ingredients')}</h4>
           </CardHeader>
           <CardContent>
             <div className="mt-8">
@@ -84,7 +87,7 @@ const RecipeDetails = ({ recipe }: RecipeDetailsProps) => {
         {/* Instructions Section */}
         <Card>
           <CardHeader>
-            <h4 className="text-2xl font-semibold">Instructions</h4>
+            <h4 className="text-2xl font-semibold">{t('recipe.instructions')}</h4>
           </CardHeader>
           <CardContent>
             <div className="mt-8">

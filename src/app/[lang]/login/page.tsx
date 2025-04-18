@@ -6,16 +6,19 @@ export const metadata: Metadata = {
   description: 'Login to your Recipe2 account',
 }
 
-export default function LoginPage({
+export default async function LoginPage({
   params
 }: {
   params: { lang: string }
 }) {
+  // Await params to access its properties
+  const { lang } = await params;
+  
   return (
     <div className="bg-muted min-h-svh">
       <div className="container flex min-h-svh items-center justify-center">
         <div className="mx-auto w-full max-w-4xl">
-          <LoginForm lang={params.lang} />
+          <LoginForm lang={lang} />
         </div>
       </div>
     </div>

@@ -1,7 +1,7 @@
 'use client'
 
 import { usePathname, useRouter } from 'next/navigation'
-import { locales, Locale } from '@/middleware'
+import { locales, Locale, defaultLocale } from '@/middleware'
 import { Button } from '@/components/ui/button'
 import { Check, ChevronDown, Globe } from 'lucide-react'
 import {
@@ -21,13 +21,25 @@ const languageNames: Record<Locale, string> = {
   de: 'Deutsch',
 }
 
-export function LanguageSwitcher() {
-  // Get current language from URL context
-  const currentLang = useLang()
+interface LanguageSwitcherProps {
+  compact?: boolean;
+}
+
+export function LanguageSwitcher({ compact = false }: LanguageSwitcherProps) {
+  // Get current language from URL path
+  const pathname = usePathname()
+  const pathLang = pathname.split('/')[1] as Locale
+  const isValidLocale = locales.includes(pathLang as Locale)
+  
+  // Get language from context as fallback
+  const contextLang = useLang()
+  
+  // Use the path language if valid, otherwise use context language or default
+  const currentLang = isValidLocale ? pathLang : (contextLang || defaultLocale)
+  
   // Get language preference setter from preferences
   const { setLanguage } = usePreferences()
   const router = useRouter()
-  const pathname = usePathname()
   
   // Path without the locale
   const pathnameWithoutLocale = pathname.split('/').slice(2).join('/')
@@ -46,13 +58,21 @@ export function LanguageSwitcher() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="flex items-center gap-1">
+        <Button 
+          variant="ghost" 
+          size={compact ? "icon" : "sm"} 
+          className={compact ? "w-full justify-center" : "flex items-center gap-1"}
+        >
           <Globe className="h-4 w-4" />
-          <span>{languageNames[currentLang as Locale]}</span>
-          <ChevronDown className="h-3 w-3 opacity-50" />
+          {!compact && (
+            <>
+              <span>{languageNames[currentLang]}</span>
+              <ChevronDown className="h-3 w-3 opacity-50" />
+            </>
+          )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
+      <DropdownMenuContent align={compact ? "center" : "end"}>
         {locales.map((lang) => (
           <DropdownMenuItem
             key={lang}

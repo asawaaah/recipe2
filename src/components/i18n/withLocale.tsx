@@ -21,7 +21,10 @@ export function withLocale<P extends { params: { lang: string } }>(
   Component: (props: P & { t: (key: string) => string }) => Promise<ReactNode> | ReactNode
 ) {
   return async function LocalizedComponent(props: P) {
-    const t = await getTranslations(props.params.lang as Locale)
+    // Await params to access its properties
+    const { params } = props;
+    const { lang } = await params;
+    const t = await getTranslations(lang as Locale)
     return Component({ ...props, t })
   }
 }
@@ -51,6 +54,8 @@ export async function LocaleWrapper({
   params: { lang: string }
   children: (props: { t: (key: string) => string }) => ReactNode
 }) {
-  const t = await getTranslations(params.lang as Locale)
+  // Await params to access its properties
+  const { lang } = await params;
+  const t = await getTranslations(lang as Locale)
   return children({ t })
 } 

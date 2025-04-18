@@ -124,12 +124,15 @@ export async function getRecipeTranslation(
 
 /**
  * Find a recipe by its localized handle
+ * If no match is found for the requested locale, try to find the handle in any locale
+ * with a preference for the 'en' locale as fallback
  */
 export async function findRecipeByLocalizedHandle(
   handle: string,
   locale: string
 ): Promise<RecipeTranslation | null> {
   try {
+    // First try with the requested locale
     const { data, error } = await supabase
       .from('recipe_translations')
       .select('*')
@@ -137,12 +140,41 @@ export async function findRecipeByLocalizedHandle(
       .eq('locale', locale)
       .single()
 
-    if (error) {
-      console.error('Error finding recipe by localized handle:', error)
-      return null
+    if (!error && data) {
+      return data as RecipeTranslation
     }
 
-    return data as RecipeTranslation
+    // If not found in the requested locale, try with 'en' as fallback
+    if (locale !== 'en') {
+      const { data: enData, error: enError } = await supabase
+        .from('recipe_translations')
+        .select('*')
+        .eq('handle', handle)
+        .eq('locale', 'en')
+        .single()
+
+      if (!enError && enData) {
+        console.log('Using fallback English translation for handle:', handle)
+        return enData as RecipeTranslation
+      }
+    }
+
+    // If still not found, try with any locale as a last resort
+    const { data: anyData, error: anyError } = await supabase
+      .from('recipe_translations')
+      .select('*')
+      .eq('handle', handle)
+      .limit(1)
+      .single()
+
+    if (!anyError && anyData) {
+      console.log('Using fallback translation in any locale for handle:', handle)
+      return anyData as RecipeTranslation
+    }
+
+    // Don't log an error here since this is expected behavior 
+    // when falling back to the direct recipe lookup
+    return null
   } catch (err) {
     console.error('Unexpected error finding recipe by localized handle:', err)
     return null

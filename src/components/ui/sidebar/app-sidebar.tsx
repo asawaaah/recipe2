@@ -17,6 +17,7 @@ import {
 import { NavMain } from "@/components/ui/sidebar/nav-main"
 import { NavProjects } from "@/components/ui/sidebar/nav-projects"
 import { NavUser } from "@/components/ui/sidebar/nav-user"
+import { NavLanguage } from "@/components/ui/sidebar/nav-language"
 import { SiteHeader } from "@/components/ui/sidebar/site-header"
 import { SearchForm } from "@/components/ui/sidebar/search-form"
 import {
@@ -148,6 +149,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavProjects projects={data.projects} />
       </SidebarContent>
       <SidebarFooter>
+        <NavLanguage />
         <NavUser />
       </SidebarFooter>
       <SidebarRail />

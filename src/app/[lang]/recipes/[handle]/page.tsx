@@ -14,7 +14,10 @@ interface RecipePageProps {
 }
 
 export async function generateMetadata({ params }: RecipePageProps): Promise<Metadata> {
-  const recipe = await fetchRecipeByHandle(params.handle, params.lang)
+  // Await params to access its properties
+  const { handle, lang } = await params;
+  
+  const recipe = await fetchRecipeByHandle(handle, lang)
   if (!recipe) return {}
 
   const authorName = recipe.user?.username 
@@ -38,11 +41,11 @@ export async function generateMetadata({ params }: RecipePageProps): Promise<Met
 
   // Find if there's a translation for the requested language
   const hasTranslation = (recipe as RecipeType).translations?.some(
-    (translation) => translation.locale === params.lang
+    (translation) => translation.locale === lang
   )
 
   // If no translation and not in default language, indicate this page is a translation of the default
-  const isDefaultLanguage = params.lang === 'en'
+  const isDefaultLanguage = lang === 'en'
 
   return {
     title: `${recipe.title} by ${authorName}`,
@@ -50,29 +53,32 @@ export async function generateMetadata({ params }: RecipePageProps): Promise<Met
     alternates: {
       languages: alternateLanguages,
       canonical: isDefaultLanguage || hasTranslation 
-        ? `/${params.lang}/recipes/${params.handle}` 
+        ? `/${lang}/recipes/${handle}` 
         : `/en/recipes/${recipe.handle}`,
     },
     openGraph: {
       title: recipe.title,
       description: recipe.description,
       images: recipe.image_url ? [recipe.image_url] : [],
-      locale: params.lang,
+      locale: lang,
       type: 'article',
     },
   }
 }
 
-export default function RecipePage({ params }: RecipePageProps) {
+export default async function RecipePage({ params }: RecipePageProps) {
+  // Await params to access its properties
+  const { handle, lang } = await params;
+  
   return (
     <SidebarLayout
       breadcrumbs={[
-        { label: 'Home', href: `/${params.lang}` },
-        { label: 'Recipes', href: `/${params.lang}/recipes` },
+        { label: 'Home', href: `/${lang}` },
+        { label: 'Recipes', href: `/${lang}/recipes` },
         { label: 'Details', isCurrentPage: true }
       ]}
     >
-      <RecipeDetailView handle={params.handle} />
+      <RecipeDetailView handle={handle} />
     </SidebarLayout>
   )
 } 

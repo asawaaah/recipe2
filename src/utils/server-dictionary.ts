@@ -10,7 +10,9 @@ import { Locale } from '@/middleware'
  * import { getTranslations } from '@/utils/server-dictionary'
  * 
  * export default async function ServerComponent({ params }: { params: { lang: string } }) {
- *   const t = await getTranslations(params.lang)
+ *   // Await params to access its properties
+ *   const { lang } = await params;
+ *   const t = await getTranslations(lang)
  *   
  *   return (
  *     <div>
@@ -53,7 +55,9 @@ export async function getTranslations(locale: Locale | string) {
  * import { getTranslations, formatMessage } from '@/utils/server-dictionary'
  * 
  * export default async function ServerComponent({ params }: { params: { lang: string } }) {
- *   const t = await getTranslations(params.lang)
+ *   // Await params to access its properties
+ *   const { lang } = await params;
+ *   const t = await getTranslations(lang)
  *   
  *   return (
  *     <p>{formatMessage(t('recipe.authoredBy'), { author: 'John Doe' })}</p>

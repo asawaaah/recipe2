@@ -2,8 +2,9 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { getStorageItem, setStorageItem, STORAGE_KEYS } from '../utils/storage'
-import { Locale, defaultLocale } from '@/middleware'
+import { Locale, defaultLocale, locales } from '@/middleware'
 import { useLang } from '@/app/providers'
+import { usePathname, useRouter } from 'next/navigation'
 
 type PreferencesContextType = {
   // Recipe favorites
@@ -51,8 +52,16 @@ export function PreferencesProvider({
   children, 
   initialLanguage 
 }: PreferencesProviderProps) {
-  // Get the current URL language from context
-  const currentLang = useLang()
+  // Get the current URL language from path
+  const pathname = usePathname()
+  const pathLang = pathname?.split('/')?.[1] as Locale
+  const isValidLocale = locales.includes(pathLang as Locale)
+  
+  // Get the current URL language from context as fallback
+  const contextLang = useLang()
+  
+  // Use path language if valid, otherwise context language
+  const urlLang = isValidLocale ? pathLang : contextLang
   
   // Load initial state from localStorage with default values
   const [favoriteRecipes, setFavoriteRecipes] = useState<string[]>(
@@ -68,9 +77,9 @@ export function PreferencesProvider({
   )
   
   const [language, setLanguage] = useState<Locale>(
-    // Initialize with provided language, URL language, fall back to stored preference or default
+    // Initialize with URL language, provided language, fall back to stored preference or default
+    urlLang || 
     initialLanguage || 
-    currentLang || 
     getStorageItem(STORAGE_KEYS.PREFERRED_LANGUAGE, 
       getStorageItem(STORAGE_KEYS.LANGUAGE, defaultLocale)
     )
@@ -87,6 +96,13 @@ export function PreferencesProvider({
   const [recentSearches, setRecentSearches] = useState<string[]>(
     getStorageItem(STORAGE_KEYS.RECENT_SEARCHES, [])
   )
+  
+  // Update state when URL changes
+  useEffect(() => {
+    if (urlLang && urlLang !== language) {
+      setLanguage(urlLang)
+    }
+  }, [urlLang, language])
   
   // Persist state changes to localStorage
   useEffect(() => {

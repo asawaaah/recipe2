@@ -1,10 +1,14 @@
 'use client'
 
 import React, { createContext, useContext, ReactNode } from 'react'
-import { Locale } from '@/middleware'
+import { Locale, locales, defaultLocale } from '@/middleware'
+import { usePathname } from 'next/navigation'
 
 // Define the type for our dictionary
 export type Dictionary = {
+  handle: {
+    recipes: string
+  }
   common: {
     home: string
     allRecipes: string
@@ -19,6 +23,10 @@ export type Dictionary = {
     delete: string
     welcome: string
     welcomeMessage: string
+  }
+  homepage: {
+    viewComponents: string
+    cookbookWithSidebar: string
   }
   recipe: {
     title: string
@@ -38,31 +46,73 @@ export type Dictionary = {
     authoredBy: string
   }
   auth: {
-    emailLabel: string
-    usernameLabel: string
-    passwordLabel: string
-    confirmPasswordLabel: string
-    signupButton: string
-    loginButton: string
-    logoutButton: string
-    forgotPassword: string
-    dontHaveAccount: string
-    alreadyHaveAccount: string
-    continueWithEmail: string
-    continueWithGoogle: string
-    orContinueWith: string
-    chooseUsername: string
-    createPassword: string
-    setUsername: string
-    loginAccountHeading: string
-    createAccountHeading: string
-    createAccountSubheading: string
-    loginAccountSubheading: string
-    termsAndPolicy: string
-    verifyEmail: string
-    verifyEmailMessage: string
-    verifyEmailInstructions: string
-    backToLogin: string
+    common: {
+      back: string
+      username: string
+      email: string
+      password: string
+      confirmPassword: string
+      forgotPassword: string
+      dontHaveAccount: string
+      alreadyHaveAccount: string
+      continueWithEmail: string
+      continueWithGoogle: string
+      orContinueWith: string
+      logOut: string
+      termsAndPolicy: string
+    }
+    login: {
+      title: string
+      subtitle: string
+      emailOrUsername: string
+      emailOrUsernamePlaceholder: string
+      password: string
+      forgotPassword: string
+      signIn: string
+      signingIn: string
+      or: string
+      continueWithGoogle: string
+      noAccount: string
+      signUp: string
+      imageAlt: string
+      termsNotice: string
+    }
+    signup: {
+      title: string
+      subtitle: string
+      email: string
+      emailPlaceholder: string
+      continueWithEmail: string
+      orContinueWith: string
+      signUpWithGoogle: string
+      chooseUsername: string
+      usernamePlaceholder: string
+      setUsername: string
+      createPassword: string
+      confirmPassword: string
+      creatingAccount: string
+      createAccount: string
+      alreadyHaveAccount: string
+      signIn: string
+    }
+    verifyEmail: {
+      title: string
+      sentVerificationLink: string
+      checkSpam: string
+      backToLogin: string
+    }
+    callback: {
+      loginSuccess: string
+      authFailed: string
+      welcomeMessage: string
+      usernameUpdateFailed: string
+      chooseUsername: string
+      usernameDescription: string
+      usernamePlaceholder: string
+      saving: string
+      saveUsername: string
+      authenticating: string
+    }
   }
   validation: {
     required: string
@@ -111,7 +161,14 @@ export function useTranslation() {
     throw new Error('useTranslation must be used within a TranslationProvider')
   }
   
-  const { dictionary, locale } = context
+  // Get the current pathname to extract the locale
+  const pathname = usePathname()
+  const pathLang = pathname?.split('/')?.[1] as Locale
+  const isValidLocale = locales.includes(pathLang as Locale)
+  
+  // Use the path language if valid, otherwise use the context language
+  const locale = isValidLocale ? pathLang : context.locale
+  const { dictionary } = context
   
   // Helper function to get a nested translation by dot notation
   const t = (key: string): string => {

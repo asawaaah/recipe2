@@ -11,29 +11,31 @@ import { Plus, Edit } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertTriangle } from "lucide-react"
 import { usePreferences } from "@/state/hooks/usePreferences"
-import Link from "next/link"
+import { useTranslation } from "@/components/i18n/TranslationContext"
+import { LocalizedLink } from "@/components/i18n/LocalizedLink"
 
 export default function MyCookbookPage() {
   const { profile } = useUser()
   const { data: recipes, isLoading, error } = useUserRecipes(profile?.id)
   const { recipeViewMode: viewMode } = usePreferences()
+  const { t } = useTranslation()
   
   return (
     <SidebarLayout
       breadcrumbs={[
-        { label: "Home", href: "/" },
-        { label: "My Cookbook", isCurrentPage: true }
+        { label: t('common.home'), href: "/" },
+        { label: t('common.myCookbook'), isCurrentPage: true }
       ]}
     >
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">My Cookbook</h1>
-          <Link href="/my-cookbook/create">
+          <h1 className="text-2xl font-bold">{t('common.myCookbook')}</h1>
+          <LocalizedLink href="/my-cookbook/create">
             <Button>
               <Plus className="mr-2 h-4 w-4" />
-              Create Recipe
+              {t('common.create')}
             </Button>
-          </Link>
+          </LocalizedLink>
         </div>
         
         {isLoading ? (
@@ -50,9 +52,9 @@ export default function MyCookbookPage() {
         ) : error ? (
           <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Error</AlertTitle>
+            <AlertTitle>{t('errors.general')}</AlertTitle>
             <AlertDescription>
-              Failed to load your recipes. Please try again later.
+              {t('errors.loadingFailed')}
             </AlertDescription>
           </Alert>
         ) : recipes?.length ? (
@@ -68,14 +70,14 @@ export default function MyCookbookPage() {
             `}>
               {recipes.map((recipe) => (
                 <div key={recipe.id} className="relative group">
-                  <Link 
+                  <LocalizedLink 
                     href={`/my-cookbook/edit/${recipe.id}`} 
                     className="absolute top-2 right-2 z-10 bg-background/80 p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     <Edit className="h-4 w-4" />
-                  </Link>
+                  </LocalizedLink>
                   <RecipeCard
-                    id={recipe.handle || recipe.id}
+                    id={recipe.id}
                     title={recipe.title}
                     description={recipe.description}
                     cookingTime={recipe.cooking_time}
@@ -83,6 +85,7 @@ export default function MyCookbookPage() {
                     imageUrl={recipe.image_url}
                     className={viewMode === 'list' ? 'w-full' : ''}
                     listView={viewMode === 'list'}
+                    handle={recipe.handle || recipe.id}
                   />
                 </div>
               ))}
@@ -90,13 +93,13 @@ export default function MyCookbookPage() {
           </>
         ) : (
           <div className="text-center py-12 space-y-6">
-            <p className="text-muted-foreground">You haven't created any recipes yet.</p>
-            <Link href="/my-cookbook/create">
+            <p className="text-muted-foreground">{t('recipe.emptyRecipes')}</p>
+            <LocalizedLink href="/my-cookbook/create">
               <Button>
                 <Plus className="mr-2 h-4 w-4" />
-                Create Your First Recipe
+                {t('recipe.createFirstRecipe')}
               </Button>
-            </Link>
+            </LocalizedLink>
           </div>
         )}
       </div>

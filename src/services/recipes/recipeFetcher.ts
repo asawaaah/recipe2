@@ -8,76 +8,117 @@ import { findRecipeByLocalizedHandle } from './translationService'
 import { RecipeTranslation } from './types'
 
 /**
+ * Transforms the raw Supabase response into a Recipe object
+ */
+function transformRecipeResponse(data: any): Recipe {
+  // Transform the data to match our Recipe type
+  let recipe = {
+    ...data,
+    user: data.user || null
+  }
+  
+  return recipe as Recipe
+}
+
+/**
  * Find a recipe by its handle, first checking for localized handles
  * 
  * @param handle The URL handle to look up
  * @param locale The current locale
  * @returns The recipe if found, null otherwise
  */
-export async function fetchRecipeByHandle(handle: string, locale?: Locale): Promise<Recipe | null> {
-  // If we have a locale, first check for a localized handle
-  if (locale) {
-    // Try to find a translation with this handle and locale
-    const translation = await findRecipeByLocalizedHandle(handle, locale);
-    
-    if (translation) {
-      // Use the recipe_id from the translation to fetch the full recipe
-      return fetchRecipe(translation.recipe_id, locale);
-    }
-  }
-  
-  // Fall back to the default handle lookup
+export async function fetchRecipeByHandle(
+  handle: string,
+  locale: string = 'en'
+): Promise<Recipe | null> {
   try {
+    // Create Supabase client
     const supabase = createServerClient<Database>(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     )
     
+    // First try to find the recipe by its localized handle
+    // The enhanced findRecipeByLocalizedHandle will try to find a fallback translation if needed
+    const translation = await findRecipeByLocalizedHandle(handle, locale);
+    
+    // If we have a translation, fetch the recipe with its ID
+    if (translation) {
+      const { data, error } = await supabase
+        .from('recipes')
+        .select(
+          `
+          *,
+          user:users!recipes_user_id_fkey (
+            id,
+            username,
+            firstname,
+            lastname
+          ),
+          ingredients (
+            *
+          ),
+          instructions (
+            *
+          ),
+          translations:recipe_translations (
+            *
+          )
+          `
+        )
+        .eq('id', translation.recipe_id)
+        .single();
+
+      if (error) {
+        // Only log this error if it's not a "not found" error
+        if (error.code !== 'PGRST116' && !error.message.includes('no rows')) {
+          console.error('Error fetching recipe:', error);
+        }
+        return null;
+      }
+
+      return transformRecipeResponse(data);
+    }
+
+    // If no translation was found (even with fallbacks), try fetching directly by handle
+    // This is a last resort fallback for recipes without translations
     const { data, error } = await supabase
       .from('recipes')
-      .select(`
+      .select(
+        `
         *,
-        ingredients (*),
-        instructions (*),
         user:users!recipes_user_id_fkey (
           id,
           username,
           firstname,
           lastname
         ),
-        translations:recipe_translations (*)
-      `)
+        ingredients (
+          *
+        ),
+        instructions (
+          *
+        ),
+        translations:recipe_translations (
+          *
+        )
+        `
+      )
       .eq('handle', handle)
-      .single()
+      .single();
 
     if (error) {
-      console.error('Recipe not found by handle:', error)
-      return null
-    }
-
-    // Transform the data to match our Recipe type
-    let recipe = {
-      ...data,
-      user: data.user || null
-    }
-    
-    // If locale is provided, use translated content if available
-    if (locale && data.translations && Array.isArray(data.translations)) {
-      const translation = data.translations.find((t: any) => t.locale === locale)
-      
-      if (translation) {
-        recipe = {
-          ...recipe,
-          title: translation.title,
-          description: translation.description
-        }
+      // Only log this error if it's not a "not found" error
+      if (error.code !== 'PGRST116' && !error.message.includes('no rows')) {
+        console.error('Error fetching recipe by direct handle:', error);
       }
+      return null;
     }
 
-    return recipe as Recipe
+    return transformRecipeResponse(data);
   } catch (err) {
-    console.error('Unexpected error fetching recipe by handle:', err)
-    return null
+    console.error('Unexpected error fetching recipe by handle:', err);
+    return null;
   }
 }
 

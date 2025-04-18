@@ -11,7 +11,10 @@ interface RecipesPageProps {
 }
 
 export async function generateMetadata({ params }: RecipesPageProps): Promise<Metadata> {
-  const t = await getTranslations(params.lang)
+  // Await params to access its properties
+  const { lang } = await params;
+  
+  const t = await getTranslations(lang)
   
   // Generate alternate URLs for each language
   const alternateLanguages: Record<string, string> = {}
@@ -24,12 +27,12 @@ export async function generateMetadata({ params }: RecipesPageProps): Promise<Me
     description: t('common.welcomeMessage'),
     alternates: {
       languages: alternateLanguages,
-      canonical: `/${params.lang}/recipes`,
+      canonical: `/${lang}/recipes`,
     },
     openGraph: {
       title: t('common.allRecipes'),
       description: t('common.welcomeMessage'),
-      locale: params.lang,
+      locale: lang,
       type: 'website',
     },
   }
@@ -38,12 +41,15 @@ export async function generateMetadata({ params }: RecipesPageProps): Promise<Me
 export default async function RecipesPage({
   params
 }: RecipesPageProps) {
-  const t = await getTranslations(params.lang)
+  // Await params to access its properties
+  const { lang } = await params;
+  
+  const t = await getTranslations(lang)
   
   return (
     <SidebarLayout
       breadcrumbs={[
-        { label: t('common.home'), href: `/${params.lang}` },
+        { label: t('common.home'), href: `/${lang}` },
         { label: t('common.allRecipes'), isCurrentPage: true }
       ]}
     >

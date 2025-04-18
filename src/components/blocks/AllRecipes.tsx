@@ -8,15 +8,11 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertTriangle } from "lucide-react"
 import { usePreferences } from "@/state/hooks/usePreferences"
 import { RecipeTranslation } from '@/services/recipes/types'
-import { useLang } from '@/app/providers'
-import { useTranslation } from '@/hooks/useTranslation'
+import { useTranslation } from '@/components/i18n/TranslationContext'
 
 export default function AllRecipes() {
-  // Get current language from context
-  const currentLang = useLang()
-  
-  // Get translations
-  const { t } = useTranslation()
+  // Get translations from standard hook
+  const { t, locale: currentLang } = useTranslation()
   
   // Fetch recipes using React Query with locale filter
   const { data: recipes, isLoading, error } = useRecipes({ locale: currentLang })

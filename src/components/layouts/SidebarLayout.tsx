@@ -15,6 +15,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar"
 import { HeaderSearch } from "@/components/ui/sidebar/header-search"
+import { LocalizedLink } from "@/components/i18n/LocalizedLink"
 
 interface BreadcrumbItem {
   href?: string;
@@ -48,8 +49,13 @@ export function SidebarLayout({ children, breadcrumbs, showSearch = true }: Side
                       {item.isCurrentPage ? (
                         <BreadcrumbPage>{item.label}</BreadcrumbPage>
                       ) : (
-                        <BreadcrumbLink href={item.href || "#"}>
-                          {item.label}
+                        <BreadcrumbLink 
+                          asChild
+                          href={item.href || "#"}
+                        >
+                          <LocalizedLink href={item.href || "#"}>
+                            {item.label}
+                          </LocalizedLink>
                         </BreadcrumbLink>
                       )}
                     </BreadcrumbItem>

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
@@ -14,6 +14,9 @@ import { SignInInput, signInSchema } from '@/lib/validators/auth'
 import { Icons } from '@/components/ui/icons'
 import { GoogleLogo } from '@/components/svg/google'
 import { useAuthActions } from '@/state/hooks/useAuthActions'
+import { useTranslation } from '@/components/i18n/TranslationContext'
+import { LocalizedLink } from '@/components/i18n/LocalizedLink'
+import { Locale, locales, defaultLocale } from '@/middleware'
 
 interface LoginFormProps extends React.ComponentProps<"div"> {
   lang?: string
@@ -25,7 +28,14 @@ export function LoginForm({
   ...props
 }: LoginFormProps) {
   const router = useRouter()
+  const pathname = usePathname()
+  const { t } = useTranslation()
   const { signIn, signInWithGoogle, isLoading, error } = useAuthActions()
+
+  // Extract language from URL path or use provided lang or default
+  const pathLang = pathname?.split('/')?.[1] as Locale
+  const isValidLocale = locales.includes(pathLang as Locale)
+  const currentLang = lang || (isValidLocale ? pathLang : defaultLocale)
 
   const {
     register,
@@ -51,7 +61,7 @@ export function LoginForm({
     }
   }
 
-  const signupPath = lang ? `/${lang}/signup` : '/signup';
+  const signupPath = currentLang ? `/${currentLang}/signup` : '/signup';
 
   return (
     <div className={cn("flex flex-col gap-2", className)} {...props}>
@@ -60,20 +70,20 @@ export function LoginForm({
           <form onSubmit={handleSubmit(onSubmit)} className="p-6 md:p-8">
             <div className="flex flex-col gap-6">
               <div className="flex flex-col items-center text-center">
-                <h1 className="text-2xl font-bold">Login to your account</h1>
+                <h1 className="text-2xl font-bold">{t('auth.login.title')}</h1>
                 <p className="text-balance text-muted-foreground">
-                  Gain access to your ultimate recipe collection.
+                  {t('auth.login.subtitle')}
                 </p>
               </div>
               {error && (
                 <div className="text-sm text-red-500 text-center">{error}</div>
               )}
               <div className="grid gap-2">
-                <Label htmlFor="emailOrUsername">Email or Username</Label>
+                <Label htmlFor="emailOrUsername">{t('auth.login.emailOrUsername')}</Label>
                 <Input
                   id="emailOrUsername"
                   type="text"
-                  placeholder="Enter your email or username"
+                  placeholder={t('auth.login.emailOrUsernamePlaceholder')}
                   disabled={isLoading}
                   {...register('emailOrUsername')}
                 />
@@ -83,13 +93,13 @@ export function LoginForm({
               </div>
               <div className="grid gap-2">
                 <div className="flex items-center">
-                  <Label htmlFor="password">Password</Label>
-                  <a
-                    href="#"
+                  <Label htmlFor="password">{t('auth.login.password')}</Label>
+                  <LocalizedLink
+                    href="/forgot-password"
                     className="ml-auto text-sm underline-offset-2 hover:underline"
                   >
-                    Forgot your password?
-                  </a>
+                    {t('auth.login.forgotPassword')}
+                  </LocalizedLink>
                 </div>
                 <Input
                   id="password"
@@ -102,11 +112,11 @@ export function LoginForm({
                 )}
               </div>
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? 'Signing in...' : 'Sign in'}
+                {isLoading ? t('auth.login.signingIn') : t('auth.login.signIn')}
               </Button>
               <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">
                 <span className="relative z-10 bg-background px-2 text-muted-foreground">
-                  Or
+                  {t('auth.login.or')}
                 </span>
               </div>
               <div className="flex justify-center">
@@ -122,17 +132,17 @@ export function LoginForm({
                   ) : (
                     <GoogleLogo />
                   )}
-                  <span className="ml-2">Continue with Google</span>
+                  <span className="ml-2">{t('auth.login.continueWithGoogle')}</span>
                 </Button>
               </div>
               <div className="text-center text-sm">
-                Don&apos;t have an account?{" "}
+                {t('auth.login.noAccount')}{" "}
                 <Button 
                   variant="link" 
                   className="p-0 underline underline-offset-4"
                   onClick={() => router.push(signupPath)}
                 >
-                  Sign up
+                  {t('auth.login.signUp')}
                 </Button>
               </div>
             </div>
@@ -140,14 +150,14 @@ export function LoginForm({
           <div className="relative hidden bg-muted md:block">
             <img
               src="\images\7eaf2586-11d1-4592-ac21-054fa4efbb8b.png"
-              alt="Image"
+              alt={t('auth.login.imageAlt')}
               className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
             />
           </div>
         </CardContent>
       </Card>
       <div className="text-balance text-center text-xs text-muted-foreground [&_a]:underline [&_a]:underline-offset-4 hover:[&_a]:text-primary">
-        By clicking continue, you agree to our Terms of Service and Privacy Policy.
+        {t('auth.login.termsNotice')}
       </div>
     </div>
   )

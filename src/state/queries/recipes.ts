@@ -247,7 +247,11 @@ export function useRecipeByHandle(handle: string | undefined) {
         
         return data
       } catch (err) {
-        console.error('Error fetching recipe by handle:', err)
+        // Only log and rethrow for unexpected errors, not for "not found" errors
+        if (err instanceof Error && 
+            !err.message.includes('not found')) {
+          console.error('Error fetching recipe by handle:', err)
+        }
         throw err
       }
     },
@@ -380,7 +384,6 @@ export function useUpdateRecipe() {
         })
         .eq("id", id)
         .select()
-        .single()
 
       if (recipeError) throw recipeError
 
