@@ -16,6 +16,10 @@ import { useAuthActions } from '@/state/hooks/useAuthActions'
 
 type FormStep = 'email' | 'username' | 'password'
 
+interface SignUpFormProps {
+  lang?: string
+}
+
 const slideAnimation = {
   initial: { x: 20, opacity: 0 },
   animate: { x: 0, opacity: 1 },
@@ -23,7 +27,7 @@ const slideAnimation = {
   transition: { duration: 0.3 }
 }
 
-export function SignUpForm() {
+export function SignUpForm({ lang }: SignUpFormProps) {
   const router = useRouter()
   const { signUp, signInWithGoogle, isLoading, error } = useAuthActions()
   const [currentStep, setCurrentStep] = useState<FormStep>('email')

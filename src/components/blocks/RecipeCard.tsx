@@ -1,7 +1,8 @@
 import { Clock, Users } from "lucide-react"
 import Image from "next/image"
-import Link from "next/link"
 import { cn } from "@/lib/utils"
+import { LocalizedLink } from "@/components/i18n/LocalizedLink"
+import { useLang } from "@/app/providers"
 
 import {
   Card,
@@ -20,6 +21,11 @@ interface RecipeCardProps {
   imageUrl?: string | null
   className?: string
   listView?: boolean
+  handle: string
+  translations?: Array<{
+    locale: string
+    handle: string
+  }>
 }
 
 export function RecipeCard({
@@ -31,11 +37,18 @@ export function RecipeCard({
   imageUrl,
   className,
   listView = false,
+  handle,
+  translations = [],
 }: RecipeCardProps) {
+  const currentLang = useLang()
+  
+  // Get the localized handle if available, otherwise use the default handle
+  const localizedHandle = translations.find(t => t.locale === currentLang)?.handle || handle
+  
   // For grid view, we use the original layout
   if (!listView) {
     return (
-      <Link href={`/recipes/${id}`}>
+      <LocalizedLink href={`/recipes/${localizedHandle}`}>
         <Card className={cn(
           "h-full overflow-hidden transition-all hover:shadow-lg flex flex-col",
           className
@@ -74,13 +87,13 @@ export function RecipeCard({
             </CardContent>
           </div>
         </Card>
-      </Link>
+      </LocalizedLink>
     )
   }
   
   // For list view, we use a different layout with image on the right
   return (
-    <Link href={`/recipes/${id}`}>
+    <LocalizedLink href={`/recipes/${localizedHandle}`}>
       <Card className={cn(
         "overflow-hidden transition-all hover:shadow-lg h-24 flex flex-row items-center justify-between",
         className
@@ -122,6 +135,6 @@ export function RecipeCard({
           <div className="w-6 h-full flex-shrink-0"></div>
         )}
       </Card>
-    </Link>
+    </LocalizedLink>
   )
 } 

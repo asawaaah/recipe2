@@ -7,11 +7,17 @@ import { AuthProvider } from './AuthProvider'
 import { PreferencesProvider } from './PreferencesProvider'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { Toaster } from 'sonner'
+import { Locale } from '@/middleware'
 
-export function AppProviders({ children }: { children: ReactNode }) {
+interface AppProvidersProps {
+  children: ReactNode
+  lang?: Locale
+}
+
+export function AppProviders({ children, lang }: AppProvidersProps) {
   return (
     <QueryProvider>
-      <PreferencesProvider>
+      <PreferencesProvider initialLanguage={lang}>
         <ThemeProvider>
           <AuthProvider>
             <TooltipProvider>

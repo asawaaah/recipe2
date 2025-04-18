@@ -7,10 +7,15 @@ import { RecipeViewToggle } from "@/components/ui/recipe-view-toggle"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertTriangle } from "lucide-react"
 import { usePreferences } from "@/state/hooks/usePreferences"
+import { RecipeTranslation } from '@/services/recipes/types'
+import { useLang } from '@/app/providers'
 
 export default function AllRecipes() {
-  // Fetch recipes using React Query
-  const { data: recipes, isLoading, error } = useRecipes()
+  // Get current language from context
+  const currentLang = useLang()
+  
+  // Fetch recipes using React Query with locale filter
+  const { data: recipes, isLoading, error } = useRecipes({ locale: currentLang })
   
   // Get view mode from preferences
   const { recipeViewMode: viewMode } = usePreferences()
@@ -63,7 +68,7 @@ export default function AllRecipes() {
           recipes.map((recipe) => (
             <RecipeCard
               key={recipe.id}
-              id={recipe.handle || recipe.id}
+              id={recipe.id}
               title={recipe.title}
               description={recipe.description}
               cookingTime={recipe.cooking_time}
@@ -71,6 +76,11 @@ export default function AllRecipes() {
               imageUrl={recipe.image_url}
               className={viewMode === 'list' ? 'w-full' : ''}
               listView={viewMode === 'list'}
+              handle={recipe.handle}
+              translations={recipe.translations?.map((t: RecipeTranslation) => ({
+                locale: t.locale,
+                handle: t.handle
+              }))}
             />
           ))
         ) : (

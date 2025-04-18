@@ -2,6 +2,8 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { getStorageItem, setStorageItem, STORAGE_KEYS } from '../utils/storage'
+import { Locale, defaultLocale } from '@/middleware'
+import { useLang } from '@/app/providers'
 
 type PreferencesContextType = {
   // Recipe favorites
@@ -17,6 +19,10 @@ type PreferencesContextType = {
   // Theme preferences
   theme: 'light' | 'dark' | 'system'
   setTheme: (theme: 'light' | 'dark' | 'system') => void
+  
+  // Language preferences
+  language: Locale
+  setLanguage: (language: Locale) => void
   
   // Recipe filters
   filterTags: string[]
@@ -36,7 +42,18 @@ type PreferencesContextType = {
 
 const PreferencesContext = createContext<PreferencesContextType | undefined>(undefined)
 
-export function PreferencesProvider({ children }: { children: ReactNode }) {
+interface PreferencesProviderProps {
+  children: ReactNode
+  initialLanguage?: Locale
+}
+
+export function PreferencesProvider({ 
+  children, 
+  initialLanguage 
+}: PreferencesProviderProps) {
+  // Get the current URL language from context
+  const currentLang = useLang()
+  
   // Load initial state from localStorage with default values
   const [favoriteRecipes, setFavoriteRecipes] = useState<string[]>(
     getStorageItem(STORAGE_KEYS.FAVORITE_RECIPES, [])
@@ -48,6 +65,15 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(
     getStorageItem(STORAGE_KEYS.THEME, 'system')
+  )
+  
+  const [language, setLanguage] = useState<Locale>(
+    // Initialize with provided language, URL language, fall back to stored preference or default
+    initialLanguage || 
+    currentLang || 
+    getStorageItem(STORAGE_KEYS.PREFERRED_LANGUAGE, 
+      getStorageItem(STORAGE_KEYS.LANGUAGE, defaultLocale)
+    )
   )
   
   const [filterTags, setFilterTags] = useState<string[]>(
@@ -74,6 +100,11 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     setStorageItem(STORAGE_KEYS.THEME, theme)
   }, [theme])
+  
+  useEffect(() => {
+    setStorageItem(STORAGE_KEYS.LANGUAGE, language)
+    setStorageItem(STORAGE_KEYS.PREFERRED_LANGUAGE, language)
+  }, [language])
   
   useEffect(() => {
     setStorageItem(STORAGE_KEYS.FILTER_TAGS, filterTags)
@@ -146,6 +177,10 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       // Theme
       theme,
       setTheme,
+      
+      // Language
+      language,
+      setLanguage,
       
       // Filters
       filterTags,

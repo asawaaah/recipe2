@@ -31,4 +31,24 @@ export interface Recipe extends RecipeMetadata {
   }>
   created_at: string
   updated_at: string
+  translations?: RecipeTranslation[]
+}
+
+export interface RecipeTranslation {
+  id: string
+  recipe_id: string
+  locale: string
+  title: string
+  description: string
+  handle: string
+  created_at?: string
+  updated_at?: string
+}
+
+export interface RecipeTranslationInput {
+  recipe_id: string
+  locale: string
+  title: string
+  description: string
+  handle?: string
 } 

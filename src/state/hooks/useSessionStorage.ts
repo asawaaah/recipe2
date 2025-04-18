@@ -10,22 +10,31 @@ import { useState, useEffect } from 'react'
  * @returns An array with the value and a function to set it
  */
 export function useSessionStorage<T>(key: string, initialValue: T) {
-  // Get from sessionStorage or use initialValue
-  const [value, setValue] = useState<T>(() => {
-    if (typeof window === 'undefined') return initialValue
+  // Always initialize with initialValue on server side
+  // This prevents hydration mismatch when server and client differ
+  const [value, setValue] = useState<T>(initialValue)
+  
+  // Only attempt to read from sessionStorage on client-side after mount
+  const [isInitialized, setIsInitialized] = useState(false)
+  
+  // Load value from sessionStorage only on client-side
+  useEffect(() => {
+    if (typeof window === 'undefined') return
     
     try {
       const item = sessionStorage.getItem(key)
-      return item ? JSON.parse(item) : initialValue
+      if (item) {
+        setValue(JSON.parse(item))
+      }
+      setIsInitialized(true)
     } catch (error) {
       console.error(`Error getting item ${key} from sessionStorage:`, error)
-      return initialValue
     }
-  })
+  }, [key])
   
-  // Update sessionStorage when value changes
+  // Update sessionStorage when value changes, but only after initialization
   useEffect(() => {
-    if (typeof window === 'undefined') return
+    if (typeof window === 'undefined' || !isInitialized) return
     
     try {
       if (value === null || value === undefined) {
@@ -36,7 +45,7 @@ export function useSessionStorage<T>(key: string, initialValue: T) {
     } catch (error) {
       console.error(`Error setting item ${key} in sessionStorage:`, error)
     }
-  }, [key, value])
+  }, [key, value, isInitialized])
   
   return [value, setValue] as const
 } 

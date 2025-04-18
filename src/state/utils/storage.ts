@@ -1,5 +1,5 @@
 // Constants
-const PREFIX = 'recipe2:'
+export const PREFIX = 'recipe2:'
 
 /**
  * Get a value from local storage with default value handling
@@ -67,6 +67,8 @@ export function clearStorage(): void {
 export const STORAGE_KEYS = {
   // Theme and UI
   THEME: 'theme',
+  LANGUAGE: 'language',
+  PREFERRED_LANGUAGE: 'preferred_language',
   SIDEBAR_STATE: 'sidebar_state',
   UI_DENSITY: 'ui_density',
   RECIPE_VIEW_MODE: 'recipe_view_mode',

@@ -74,11 +74,25 @@ const SidebarProvider = React.forwardRef<
   ) => {
     const isMobile = useIsMobile()
     const [openMobile, setOpenMobile] = React.useState(false)
-
-    // This is the internal state of the sidebar.
-    // Use sessionStorage for persistence across page loads
-    const [storedOpen, setStoredOpen] = useSessionStorage("sidebar_state", defaultOpen)
-    const [_open, _setOpen] = React.useState(storedOpen)
+    
+    // Use React state initially, then update from sessionStorage on client-side
+    const [_open, _setOpen] = React.useState(defaultOpen)
+    const [initialized, setInitialized] = React.useState(false)
+    
+    // Load from sessionStorage only on client-side
+    React.useEffect(() => {
+      if (typeof window !== 'undefined') {
+        try {
+          const storedValue = window.sessionStorage.getItem("sidebar_state")
+          if (storedValue !== null) {
+            _setOpen(JSON.parse(storedValue))
+          }
+        } catch (error) {
+          console.error("Error reading from sessionStorage:", error)
+        }
+        setInitialized(true)
+      }
+    }, [])
     
     // We use openProp and setOpenProp for control from outside the component.
     const open = openProp ?? _open
@@ -91,10 +105,16 @@ const SidebarProvider = React.forwardRef<
           _setOpen(openState)
         }
 
-        // Store state in sessionStorage instead of cookies
-        setStoredOpen(openState)
+        // Store state in sessionStorage on client-side only
+        if (typeof window !== 'undefined') {
+          try {
+            window.sessionStorage.setItem("sidebar_state", JSON.stringify(openState))
+          } catch (error) {
+            console.error("Error writing to sessionStorage:", error)
+          }
+        }
       },
-      [setOpenProp, open, setStoredOpen]
+      [setOpenProp, open]
     )
 
     // Helper to toggle the sidebar.
@@ -104,8 +124,10 @@ const SidebarProvider = React.forwardRef<
         : setOpen((open) => !open)
     }, [isMobile, setOpen, setOpenMobile])
 
-    // Adds a keyboard shortcut to toggle the sidebar.
+    // Only add event listeners on client-side
     React.useEffect(() => {
+      if (typeof window === 'undefined') return
+      
       const handleKeyDown = (event: KeyboardEvent) => {
         if (
           event.key === SIDEBAR_KEYBOARD_SHORTCUT &&

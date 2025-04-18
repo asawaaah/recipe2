@@ -23,22 +23,31 @@ export const recipeKeys = {
   list: (filters: Record<string, any>) => [...recipeKeys.lists(), filters] as const,
   details: () => [...recipeKeys.all, 'detail'] as const,
   detail: (id: string) => [...recipeKeys.details(), id] as const,
-  userRecipes: (userId?: string) => [...recipeKeys.lists(), { userId }] as const,
+  userRecipes: (userId?: string, options?: Record<string, any>) => [...recipeKeys.lists(), { userId, ...options }] as const,
 }
 
 // Query Hooks
-export function useRecipes(filters = {}) {
+export function useRecipes(filters: Record<string, any> = {}) {
   const supabase = createClient()
 
   return useQuery({
     queryKey: recipeKeys.list(filters),
     queryFn: async () => {
+      // Extract locale from filters but don't use it for filtering the database query
+      const { locale, ...dbFilters } = filters
+      
       let query = supabase
         .from("recipes")
-        .select("*")
+        .select(`
+          *,
+          user:users!recipes_user_id_fkey(
+            id, username
+          ),
+          translations:recipe_translations(*)
+        `)
         
-      // Apply filters dynamically
-      Object.entries(filters).forEach(([key, value]) => {
+      // Apply filters dynamically - but only use dbFilters, not including locale
+      Object.entries(dbFilters).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
           // @ts-ignore - dynamic filtering
           query = query.eq(key, value)
@@ -48,26 +57,84 @@ export function useRecipes(filters = {}) {
       const { data, error } = await query.order("created_at", { ascending: false })
       
       if (error) throw error
+      
+      // If locale is provided, apply translations
+      if (locale && typeof locale === 'string') {
+        return data.map(recipe => {
+          if (recipe.translations && Array.isArray(recipe.translations)) {
+            const translation = recipe.translations.find((t: any) => t.locale === locale);
+            
+            if (translation) {
+              return {
+                ...recipe,
+                title: translation.title,
+                description: translation.description,
+                handle: translation.handle || recipe.handle
+              };
+            }
+          }
+          return recipe;
+        });
+      }
+      
       return data
     },
   })
 }
 
-export function useUserRecipes(userId: string | undefined) {
+export function useUserRecipes(userId: string | undefined, options: Record<string, any> = {}) {
   const supabase = createClient()
 
   return useQuery({
-    queryKey: recipeKeys.userRecipes(userId),
+    queryKey: recipeKeys.userRecipes(userId, options),
     queryFn: async () => {
       if (!userId) return []
       
-      const { data, error } = await supabase
+      // Extract locale from options but don't use it for filtering
+      const { locale, ...dbFilters } = options
+      
+      let query = supabase
         .from("recipes")
-        .select("*")
+        .select(`
+          *,
+          user:users!recipes_user_id_fkey(
+            id, username
+          ),
+          translations:recipe_translations(*)
+        `)
         .eq("user_id", userId)
-        .order("created_at", { ascending: false })
+      
+      // Apply any additional filters
+      Object.entries(dbFilters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          // @ts-ignore - dynamic filtering
+          query = query.eq(key, value)
+        }
+      })
+      
+      const { data, error } = await query.order("created_at", { ascending: false })
       
       if (error) throw error
+      
+      // If locale is provided, apply translations
+      if (locale && typeof locale === 'string') {
+        return data.map(recipe => {
+          if (recipe.translations && Array.isArray(recipe.translations)) {
+            const translation = recipe.translations.find((t: any) => t.locale === locale);
+            
+            if (translation) {
+              return {
+                ...recipe,
+                title: translation.title,
+                description: translation.description,
+                handle: translation.handle || recipe.handle
+              };
+            }
+          }
+          return recipe;
+        });
+      }
+      
       return data
     },
     enabled: !!userId,
@@ -123,6 +190,35 @@ export function useRecipeByHandle(handle: string | undefined) {
       if (!handle) return null
       
       try {
+        // First, try to find a recipe translation with this handle
+        const { data: translationData, error: translationError } = await supabase
+          .from("recipe_translations")
+          .select(`
+            *,
+            recipe:recipes(
+              *,
+              ingredients(*),
+              instructions(*),
+              user:users!recipes_user_id_fkey(
+                id, username
+              ),
+              translations:recipe_translations(*)
+            )
+          `)
+          .eq("handle", handle)
+          .maybeSingle()
+          
+        // If we found a translation, return the recipe with that translation
+        if (translationData?.recipe) {
+          console.log('Found recipe through translation:', translationData.recipe)
+          return {
+            ...translationData.recipe,
+            title: translationData.title,
+            description: translationData.description
+          }
+        }
+        
+        // If no translation found, try to find recipe directly by handle
         const { data, error } = await supabase
           .from("recipes")
           .select(`
@@ -131,7 +227,8 @@ export function useRecipeByHandle(handle: string | undefined) {
             instructions(*),
             user:users!recipes_user_id_fkey(
               id, username
-            )
+            ),
+            translations:recipe_translations(*)
           `)
           .eq("handle", handle)
           .single()

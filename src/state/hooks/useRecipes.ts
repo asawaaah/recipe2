@@ -14,8 +14,8 @@ export function useRecipes(filters = {}) {
   return useRecipesQuery(filters)
 }
 
-export function useUserRecipes(userId: string | undefined) {
-  return useUserRecipesQuery(userId)
+export function useUserRecipes(userId: string | undefined, options: Record<string, any> = {}) {
+  return useUserRecipesQuery(userId, options)
 }
 
 export function useRecipe(recipeId: string | undefined) {

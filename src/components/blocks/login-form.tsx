@@ -15,10 +15,15 @@ import { Icons } from '@/components/ui/icons'
 import { GoogleLogo } from '@/components/svg/google'
 import { useAuthActions } from '@/state/hooks/useAuthActions'
 
+interface LoginFormProps extends React.ComponentProps<"div"> {
+  lang?: string
+}
+
 export function LoginForm({
   className,
+  lang,
   ...props
-}: React.ComponentProps<"div">) {
+}: LoginFormProps) {
   const router = useRouter()
   const { signIn, signInWithGoogle, isLoading, error } = useAuthActions()
 
@@ -45,6 +50,8 @@ export function LoginForm({
       console.error('Error with Google login:', error)
     }
   }
+
+  const signupPath = lang ? `/${lang}/signup` : '/signup';
 
   return (
     <div className={cn("flex flex-col gap-2", className)} {...props}>
@@ -123,7 +130,7 @@ export function LoginForm({
                 <Button 
                   variant="link" 
                   className="p-0 underline underline-offset-4"
-                  onClick={() => router.push('/signup')}
+                  onClick={() => router.push(signupPath)}
                 >
                   Sign up
                 </Button>
