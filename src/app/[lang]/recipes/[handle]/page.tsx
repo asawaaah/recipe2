@@ -14,6 +14,16 @@ interface RecipePageProps {
   }
 }
 
+// Composant séparé pour le JSON-LD
+const JsonLd = ({ data }: { data: any }) => {
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+    />
+  );
+};
+
 export async function generateMetadata({ params }: RecipePageProps): Promise<Metadata> {
   // Await params to access its properties
   const { handle, lang } = await params;
@@ -65,26 +75,6 @@ export async function generateMetadata({ params }: RecipePageProps): Promise<Met
   // If no translation and not in default language, indicate this page is a translation of the default
   const isDefaultLanguage = lang === 'en'
 
-  // Create JSON-LD structured data for Recipe
-  const jsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'Recipe',
-    name: title,
-    description: description,
-    author: {
-      '@type': 'Person',
-      name: recipe.user?.username || authorName
-    },
-    image: recipe.image_url ? [recipe.image_url] : [],
-    recipeIngredient: recipe.ingredients?.map(ing => `${ing.amount} ${ing.unit} ${ing.name}`) || [],
-    recipeInstructions: recipe.instructions?.map(inst => ({
-      '@type': 'HowToStep',
-      text: inst.description
-    })) || [],
-    cookTime: recipe.cooking_time ? `PT${recipe.cooking_time}M` : undefined,
-    recipeYield: recipe.servings ? `${recipe.servings} servings` : undefined
-  };
-
   return {
     title: formattedTitle,
     description: description,
@@ -114,7 +104,6 @@ export async function generateMetadata({ params }: RecipePageProps): Promise<Met
     // Merged other properties
     other: {
       'robots': 'index, follow',
-      'script:ld+json': JSON.stringify(jsonLd),
     },
   }
 }
@@ -123,15 +112,59 @@ export default async function RecipePage({ params }: RecipePageProps) {
   // Await params to access its properties
   const { handle, lang } = await params;
   
+  const recipe = await fetchRecipeByHandle(handle, lang);
+  
+  if (!recipe) {
+    return notFound();
+  }
+  
+  // Get translation for the requested language if available
+  const currentTranslation = (recipe as RecipeType).translations?.find(
+    t => t.locale === lang
+  );
+  
+  // Use translated content if available, otherwise use default content
+  const title = currentTranslation?.title || recipe.title;
+  const description = currentTranslation?.description || recipe.description;
+
+  const authorName = recipe.user?.username 
+    ? recipe.user.username
+    : (lang === 'fr' ? 'Chef Inconnu' : 
+       lang === 'es' ? 'Chef Desconocido' : 
+       lang === 'de' ? 'Unbekannter Koch' : 'Unknown Chef');
+  
+  // Create JSON-LD structured data for Recipe
+  const jsonLdData = {
+    '@context': 'https://schema.org',
+    '@type': 'Recipe',
+    name: title,
+    description: description,
+    author: {
+      '@type': 'Person',
+      name: recipe.user?.username || authorName
+    },
+    image: recipe.image_url ? [recipe.image_url] : [],
+    recipeIngredient: recipe.ingredients?.map(ing => `${ing.amount} ${ing.unit} ${ing.name}`) || [],
+    recipeInstructions: recipe.instructions?.map(inst => ({
+      '@type': 'HowToStep',
+      text: inst.description
+    })) || [],
+    cookTime: recipe.cooking_time ? `PT${recipe.cooking_time}M` : undefined,
+    recipeYield: recipe.servings ? `${recipe.servings} servings` : undefined
+  };
+  
   return (
-    <SidebarLayout
-      breadcrumbs={[
-        { label: 'Home', href: `/${lang}` },
-        { label: 'Recipes', href: getLocalizedCanonical('/recipes', lang) },
-        { label: 'Details', isCurrentPage: true }
-      ]}
-    >
-      <RecipeDetailView handle={handle} />
-    </SidebarLayout>
+    <>
+      <JsonLd data={jsonLdData} />
+      <SidebarLayout
+        breadcrumbs={[
+          { label: 'Home', href: `/${lang}` },
+          { label: 'Recipes', href: getLocalizedCanonical('/recipes', lang) },
+          { label: 'Details', isCurrentPage: true }
+        ]}
+      >
+        <RecipeDetailView handle={handle} />
+      </SidebarLayout>
+    </>
   )
 } 
